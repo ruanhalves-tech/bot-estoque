@@ -42,7 +42,7 @@ async function salvarNaPlanilha(produto, quantidade) {
 client.once('ready', () => {
     console.log(`🤖 Logado como ${client.user.tag}`);
 });
-});
+
 // 🎯 COMANDO /mov
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
