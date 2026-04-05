@@ -26,38 +26,21 @@ client.once('ready', () => {
 });
 
 // ===== COMANDO =====
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isCommand()) return;
 
-  if (interaction.commandName === 'registrar') {
+  if (interaction.commandName === "mov") {
     try {
-      await interaction.deferReply(); // evita erro de timeout
+      await interaction.deferReply();
 
-      const nome = interaction.options.getString('nome');
-      const quantidade = interaction.options.getInteger('quantidade');
+      // sua lógica aqui (planilha etc)
 
-      // 👉 ID da planilha
-      const spreadsheetId = process.env.SHEET_ID;
-
-      // 👉 Nome da aba (tem que existir!)
-      const range = 'Página1!A:B';
-
-      await sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [[nome, quantidade]],
-        },
-      });
-
-      await interaction.editReply('✅ Registrado na planilha com sucesso!');
-    } catch (error) {
-      console.error(error);
-      await interaction.editReply('❌ Erro ao registrar na planilha.');
+      await interaction.editReply("Movimentação registrada!");
+    } catch (err) {
+      console.error(err);
+      await interaction.editReply("Erro ao registrar.");
     }
   }
 });
-
 // ===== LOGIN =====
 client.login(process.env.TOKEN);
