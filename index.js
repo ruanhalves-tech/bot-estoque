@@ -31,9 +31,10 @@ const commands = [
         .setName("mov")
         .setDescription("Movimentar estoque")
         .addStringOption(option =>
-            option.setName("item")
-                .setRequired(true)
-                .addChoices(
+    option.setName("item")
+        .setDescription("Escolha o item")
+        .setRequired(true)
+        .addChoices(
                     { name: "Colete", value: "Colete" },
                     { name: "Drogas", value: "Drogas" },
                     { name: "C4", value: "C4" },
@@ -52,17 +53,19 @@ const commands = [
                 )
         )
         .addStringOption(option =>
-            option.setName("tipo")
-                .setRequired(true)
-                .addChoices(
+    option.setName("tipo")
+        .setDescription("Tipo de movimentação")
+        .setRequired(true)
+        .addChoices(
                     { name: "Entrada", value: "entrada" },
                     { name: "Saída", value: "saida" }
                 )
         )
         .addIntegerOption(option =>
-            option.setName("quantidade")
-                .setRequired(true)
-        )
+    option.setName("quantidade")
+        .setDescription("Quantidade do item")
+        .setRequired(true)
+)
 ];
 
 const rest = new REST({ version: "10" }).setToken(TOKEN);
