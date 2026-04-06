@@ -93,11 +93,17 @@ client.on("interactionCreate", async interaction => {
             const data = new Date().toLocaleString("pt-BR");
 
             await sheets.spreadsheets.values.append({
-    spreadsheetId: SHEET_ID,
-    range: 'Movimentação!B:E',
+    spreadsheetId: process.env.SHEET_ID,
+    range: 'Movimentação!A:E',
     valueInputOption: 'USER_ENTERED',
     resource: {
-        values: [[item, tipo, quantidade, user]]
+        values: [[
+            data,          // A = Data
+            item,          // B = Item
+            tipo === 'entrada' ? 'Entrada' : 'Saída', // C = Tipo
+            quantidade,    // D = Quantidade
+            user           // E = Observação (nome)
+        ]]
     }
 });
 
