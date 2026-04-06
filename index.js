@@ -94,7 +94,7 @@ client.on("interactionCreate", async interaction => {
 
             await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
-    range: 'Movimentação!A:D',
+    range: 'Movimentação!B:E',
     valueInputOption: 'USER_ENTERED',
     resource: {
         values: [[item, tipo, quantidade, user]]
