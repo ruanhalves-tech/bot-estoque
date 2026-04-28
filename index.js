@@ -1,6 +1,16 @@
 require("dotenv").config();
 
-const { Client, GatewayIntentBits, SlashCommandBuilder, Routes } = require("discord.js");
+const { 
+    Client, 
+    GatewayIntentBits, 
+    SlashCommandBuilder, 
+    Routes,
+    ActionRowBuilder,
+    StringSelectMenuBuilder,
+    ButtonBuilder,
+    ButtonStyle
+} = require("discord.js");
+
 const { REST } = require("@discordjs/rest");
 const { google } = require("googleapis");
 
@@ -8,13 +18,18 @@ const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const SHEET_ID = process.env.SHEET_ID;
 
+const CANAL_VENDAS = '1498871684869128273';
+const CANAL_LIDER = '1498740612630052864';
+const CANAL_RELATORIO = '1498875224823959573';
+const CARGO_LIDER = '1498883318618394654';
+
 const credenciais = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
-// 🔐 GOOGLE AUTH
+// ===== GOOGLE =====
 const auth = new google.auth.GoogleAuth({
     credentials: {
         client_email: credenciais.client_email,
@@ -25,112 +40,261 @@ const auth = new google.auth.GoogleAuth({
 
 const sheets = google.sheets({ version: "v4", auth });
 
-// 🎯 COMANDO
+// ===== DADOS =====
+const precos = {
+    "Kit Sabotagem ignição": 5000,
+    "Chave de roda": 4000,
+    "Alicate": 3000,
+    "Muni de Fuzil": 130,
+    "Kit Comum": 300,
+    "Kit Raro": 10000,
+    "Kit Épico": 20000,
+    "Kit Lendário": 30000,
+    "C4": 1500
+};
+
+let vendas = [];
+let sessoes = {};
+
+// ===== FUNÇÃO =====
+function dinheiro(v) {
+    return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+// ===== COMANDOS =====
 const commands = [
+
+    // 🔹 COMANDO PLANILHA
     new SlashCommandBuilder()
         .setName("mov")
         .setDescription("Movimentar estoque")
         .addStringOption(option =>
-    option.setName("item")
-        .setDescription("Escolha o item")
-        .setRequired(true)
-        .addChoices(
-    { name: "Colete", value: "Colete" },
-    { name: "Drogas", value: "Drogas" },
-    { name: "C4", value: "C4" },
-    { name: "SMG", value: "SMG" },
-    { name: "PT", value: "PT" },
-    { name: "Fuzil", value: "Fuzil" },
-    { name: "MuniSMG", value: "MuniSMG" },
-    { name: "MuniPT", value: "MuniPT" },
-    { name: "MuniFuzil", value: "MuniFuzil" },
-    { name: "Lockpick", value: "Lockpick" },
-    { name: "ReparoComum", value: "ReparoComum" },
-    { name: "ReparoEpico", value: "ReparoEpico" },
-    { name: "ReparoLendario", value: "ReparoLendario" },
-    { name: "Soro", value: "Soro" },
-    { name: "Adrenalina", value: "Adrenalina" },
-
-    // 🔥 NOVOS ITENS (EXATOS)
-    { name: "SuperDroga", value: "SuperDroga" },
-    { name: "pulseira", value: "pulseira" },
-    { name: "KitRaro", value: "KitRaro" },
-    { name: "Algema", value: "Algema" }
-)
+            option.setName("item")
+                .setDescription("Escolha o item")
+                .setRequired(true)
+                .addChoices(
+                    { name: "Colete", value: "Colete" },
+                    { name: "Drogas", value: "Drogas" },
+                    { name: "C4", value: "C4" },
+                    { name: "SMG", value: "SMG" },
+                    { name: "PT", value: "PT" },
+                    { name: "Fuzil", value: "Fuzil" },
+                    { name: "MuniSMG", value: "MuniSMG" },
+                    { name: "MuniPT", value: "MuniPT" },
+                    { name: "MuniFuzil", value: "MuniFuzil" },
+                    { name: "Lockpick", value: "Lockpick" },
+                    { name: "ReparoComum", value: "ReparoComum" },
+                    { name: "ReparoEpico", value: "ReparoEpico" },
+                    { name: "ReparoLendario", value: "ReparoLendario" },
+                    { name: "Soro", value: "Soro" },
+                    { name: "Adrenalina", value: "Adrenalina" },
+                    { name: "SuperDroga", value: "SuperDroga" },
+                    { name: "pulseira", value: "pulseira" },
+                    { name: "KitRaro", value: "KitRaro" },
+                    { name: "Algema", value: "Algema" }
+                )
         )
         .addStringOption(option =>
-    option.setName("tipo")
-        .setDescription("Tipo de movimentação")
-        .setRequired(true)
-        .addChoices(
+            option.setName("tipo")
+                .setDescription("Tipo de movimentação")
+                .setRequired(true)
+                .addChoices(
                     { name: "Entrada", value: "entrada" },
                     { name: "Saída", value: "saida" }
                 )
         )
         .addIntegerOption(option =>
-    option.setName("quantidade")
-        .setDescription("Quantidade do item")
-        .setRequired(true)
-)
+            option.setName("quantidade")
+                .setDescription("Quantidade")
+                .setRequired(true)
+        ),
+
+    // 🔥 NOVOS
+    new SlashCommandBuilder().setName("v").setDescription("Registrar venda"),
+    new SlashCommandBuilder().setName("r").setDescription("Relatório"),
+    new SlashCommandBuilder().setName("reset").setDescription("Resetar vendas")
 ];
 
 const rest = new REST({ version: "10" }).setToken(TOKEN);
 
-// 🚀 REGISTRAR COMANDO
+// ===== REGISTRAR =====
 (async () => {
     await rest.put(Routes.applicationCommands(CLIENT_ID), {
         body: commands
     });
-    console.log("✅ Comando registrado!");
+    console.log("✅ Comandos registrados!");
 })();
 
-// 🎯 EXECUÇÃO
+// ===== INTERAÇÕES =====
 client.on("interactionCreate", async interaction => {
-    if (!interaction.isChatInputCommand()) return;
 
-    if (interaction.commandName === "mov") {
+    // ===== MOV (PLANILHA) =====
+    if (interaction.isChatInputCommand() && interaction.commandName === "mov") {
         try {
             await interaction.deferReply();
 
             const item = interaction.options.getString("item");
             const tipo = interaction.options.getString("tipo");
             const quantidade = interaction.options.getInteger("quantidade");
-            const user = interaction.user.username;
+            const user = interaction.member.displayName;
             const data = new Date().toLocaleString("pt-BR");
 
             await sheets.spreadsheets.values.append({
-    spreadsheetId: process.env.SHEET_ID,
-    range: 'Movimentação!A:E',
-    valueInputOption: 'USER_ENTERED',
-    resource: {
-        values: [[
-            data,          // A = Data
-            item,          // B = Item
-            tipo === 'entrada' ? 'Entrada' : 'Saída', // C = Tipo
-            quantidade,    // D = Quantidade
-            user           // E = Observação (nome)
-        ]]
-    }
-});
+                spreadsheetId: SHEET_ID,
+                range: 'Movimentação!A:E',
+                valueInputOption: 'USER_ENTERED',
+                resource: {
+                    values: [[data, item, tipo === 'entrada' ? 'Entrada' : 'Saída', quantidade, user]]
+                }
+            });
 
-            // 🔥 MENSAGEM COMPLETA
             await interaction.editReply(
-                `📊 **Movimentação registrada!**\n\n` +
-                `👤 **Usuário:** ${user}\n` +
-                `📦 **Item:** ${item}\n` +
-                `🔄 **Tipo:** ${tipo}\n` +
-                `🔢 **Quantidade:** ${quantidade}\n` +
-                `📅 **Data:** ${data}`
+                `📊 Movimentação registrada!\n\n👤 ${user}\n📦 ${item}\n🔄 ${tipo}\n🔢 ${quantidade}`
             );
 
         } catch (err) {
-            console.error("❌ ERRO:", err);
-            await interaction.editReply("❌ Erro ao salvar na planilha.");
+            console.error(err);
+            await interaction.editReply("❌ Erro na planilha");
         }
+    }
+
+    // ===== VENDA =====
+    if (interaction.isChatInputCommand() && interaction.commandName === "v") {
+        sessoes[interaction.user.id] = { itens: {} };
+
+        const menu = new StringSelectMenuBuilder()
+            .setCustomId("item")
+            .setPlaceholder("Escolha o item")
+            .addOptions(Object.keys(precos).map(i => ({ label: i, value: i })));
+
+        return interaction.reply({
+            content: "📦 Escolha o item:",
+            components: [new ActionRowBuilder().addComponents(menu)]
+        });
+    }
+
+    if (interaction.isStringSelectMenu()) {
+        const item = interaction.values[0];
+        sessoes[interaction.user.id].itemAtual = item;
+
+        return interaction.reply({ content: `Digite a quantidade de ${item}`, ephemeral: true });
+    }
+
+    if (interaction.isButton()) {
+        const sessao = sessoes[interaction.user.id];
+        if (!sessao) return;
+
+        if (interaction.customId === "cancelar") {
+            delete sessoes[interaction.user.id];
+            return interaction.reply("❌ Cancelado");
+        }
+
+        if (interaction.customId === "add") {
+            const restantes = Object.keys(precos).filter(i => !sessao.itens[i]);
+
+            const menu = new StringSelectMenuBuilder()
+                .setCustomId("item")
+                .addOptions(restantes.map(i => ({ label: i, value: i })));
+
+            return interaction.reply({
+                content: "Escolha outro item:",
+                components: [new ActionRowBuilder().addComponents(menu)]
+            });
+        }
+
+        if (interaction.customId === "finalizar") {
+            let total = 0;
+            let texto = "";
+
+            for (let i in sessao.itens) {
+                const v = precos[i] * sessao.itens[i];
+                total += v;
+                texto += `• ${i} — ${sessao.itens[i]}\n`;
+            }
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId("confirmar").setLabel("Confirmar").setStyle(ButtonStyle.Success),
+                new ButtonBuilder().setCustomId("cancelar").setLabel("Cancelar").setStyle(ButtonStyle.Danger)
+            );
+
+            return interaction.reply({
+                content: `Confirmar venda?\n\n${texto}\n💰 ${dinheiro(total)}`,
+                components: [row]
+            });
+        }
+
+        if (interaction.customId === "confirmar") {
+            let total = 0;
+            let log = `📊 NOVA VENDA\n\n👤 ${interaction.member.displayName}\n\n`;
+
+            for (let i in sessao.itens) {
+                const qtd = sessao.itens[i];
+                const unit = precos[i];
+                const tot = unit * qtd;
+                total += tot;
+
+                log += `┣ ${i} — ${qtd}\n┃ 💰 ${dinheiro(unit)}\n┃ 💵 ${dinheiro(tot)}\n`;
+            }
+
+            log += `\n💰 TOTAL: ${dinheiro(total)}`;
+
+            vendas.push({ user: interaction.member.displayName, itens: sessao.itens, total });
+
+            const c1 = await client.channels.fetch(CANAL_VENDAS);
+            const c2 = await client.channels.fetch(CANAL_LIDER);
+
+            c1.send(`💰 Venda registrada | ${dinheiro(total)}`);
+            c2.send(log);
+
+            delete sessoes[interaction.user.id];
+
+            return interaction.reply("✅ Venda registrada!");
+        }
+    }
+
+    // ===== RELATÓRIO =====
+    if (interaction.isChatInputCommand() && interaction.commandName === "r") {
+        if (!interaction.member.roles.cache.has(CARGO_LIDER))
+            return interaction.reply("❌ Sem permissão");
+
+        let total = 0;
+        let resumo = {};
+
+        for (let v of vendas) {
+            total += v.total;
+
+            for (let i in v.itens) {
+                if (!resumo[i]) resumo[i] = { qtd: 0, total: 0 };
+                resumo[i].qtd += v.itens[i];
+                resumo[i].total += v.itens[i] * precos[i];
+            }
+        }
+
+        let texto = "📊 RELATÓRIO\n\n";
+
+        for (let i in resumo) {
+            texto += `${i} — ${resumo[i].qtd} (${dinheiro(resumo[i].total)})\n`;
+        }
+
+        texto += `\n💰 TOTAL: ${dinheiro(total)}`;
+
+        const canal = await client.channels.fetch(CANAL_RELATORIO);
+        canal.send(texto);
+
+        return interaction.reply("📊 Enviado!");
+    }
+
+    // ===== RESET =====
+    if (interaction.isChatInputCommand() && interaction.commandName === "reset") {
+        if (!interaction.member.roles.cache.has(CARGO_LIDER))
+            return interaction.reply("❌ Sem permissão");
+
+        vendas = [];
+        return interaction.reply("🧹 Resetado!");
     }
 });
 
-client.once("ready", () => {
+client.once("clientReady", () => {
     console.log(`🤖 Logado como ${client.user.tag}`);
 });
 
