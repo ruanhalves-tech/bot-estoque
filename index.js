@@ -622,7 +622,7 @@ client.on("interactionCreate", async interaction => {
     }
 
     // ===== RELATÓRIO =====
-   if (interaction.isChatInputCommand() && interaction.commandName === "r") {
+if (interaction.isChatInputCommand() && interaction.commandName === "r") {
     if (!interaction.member.roles.cache.has(CARGO_LIDER))
         return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
 
@@ -635,18 +635,12 @@ client.on("interactionCreate", async interaction => {
     for (let v of vendas) {
         totalGeral += v.total;
 
-        // usuários
         if (!usuarios[v.user]) usuarios[v.user] = 0;
         usuarios[v.user] += v.total;
 
-        // itens
         for (let i in v.itens) {
             if (!itens[i]) {
-                itens[i] = {
-                    qtd: 0,
-                    total: 0,
-                    usuarios: {}
-                };
+                itens[i] = { qtd: 0, total: 0, usuarios: {} };
             }
 
             const qtd = v.itens[i];
@@ -659,11 +653,9 @@ client.on("interactionCreate", async interaction => {
         }
     }
 
-    // ITEM MAIS VENDIDO
     let itemMaisVendido = null;
     let maiorQtd = 0;
 
-    // ITEM MAIS CARO
     let itemMaisValor = null;
     let maiorValor = 0;
 
@@ -679,14 +671,12 @@ client.on("interactionCreate", async interaction => {
         }
     }
 
-    // TOP VENDEDORES
     const ranking = Object.entries(usuarios)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3);
 
     let texto = `📊 ═════ RELATÓRIO DE VENDAS ═════\n\n`;
 
-    // ITENS
     for (let i in itens) {
         const item = itens[i];
 
@@ -702,14 +692,10 @@ client.on("interactionCreate", async interaction => {
     }
 
     texto += `━━━━━━━━━━━━━━━━━━\n\n`;
-
-    // DESTAQUES
     texto += `🏆 Item mais vendido: ${itemMaisVendido || "Nenhum"} (${maiorQtd}x)\n`;
     texto += `💰 Maior faturamento: ${itemMaisValor || "Nenhum"} (${dinheiro(maiorValor)})\n\n`;
 
     texto += `━━━━━━━━━━━━━━━━━━\n\n`;
-
-    // TOP
     texto += `🏆 TOP VENDEDORES\n`;
 
     const medalhas = ["🥇", "🥈", "🥉"];
@@ -719,11 +705,8 @@ client.on("interactionCreate", async interaction => {
     });
 
     texto += `\n━━━━━━━━━━━━━━━━━━\n\n`;
-
-    // FINAL
     texto += `🧾 Total de vendas: ${totalVendas}\n`;
     texto += `💰 TOTAL GERAL: ${dinheiro(totalGeral)}\n\n`;
-
     texto += `👤 Gerado por: ${interaction.member.displayName}\n`;
     texto += `📅 ${new Date().toLocaleString("pt-BR")}`;
 
@@ -733,6 +716,10 @@ client.on("interactionCreate", async interaction => {
     return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
 }
 
+// 🔥 FECHAMENTO CORRETO DO EVENTO
+});
+
+// ===== BOT ONLINE =====
 client.once("ready", () => {
     console.log(`🤖 Logado como ${client.user.tag}`);
 });
