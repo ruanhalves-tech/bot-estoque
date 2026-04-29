@@ -104,9 +104,10 @@ const commands = [
                 )
         )
         .addIntegerOption(option =>
-            option.setName("quantidade")
-                .setRequired(true)
-        ),
+    option.setName("quantidade")
+        .setDescription("Quantidade do item")
+        .setRequired(true)
+),
 
     new SlashCommandBuilder().setName("v").setDescription("Registrar venda"),
     new SlashCommandBuilder().setName("r").setDescription("Relatório"),
