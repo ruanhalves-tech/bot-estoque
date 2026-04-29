@@ -72,6 +72,7 @@ const commands = [
         .setDescription("Movimentar estoque")
         .addStringOption(option =>
             option.setName("item")
+                .setDescription("Escolha o item")
                 .setRequired(true)
                 .addChoices(
                     { name: "Colete", value: "Colete" },
@@ -97,6 +98,7 @@ const commands = [
         )
         .addStringOption(option =>
             option.setName("tipo")
+                .setDescription("Entrada ou saída")
                 .setRequired(true)
                 .addChoices(
                     { name: "Entrada", value: "entrada" },
@@ -104,10 +106,10 @@ const commands = [
                 )
         )
         .addIntegerOption(option =>
-    option.setName("quantidade")
-        .setDescription("Quantidade do item")
-        .setRequired(true)
-),
+            option.setName("quantidade")
+                .setDescription("Quantidade do item")
+                .setRequired(true)
+        ),
 
     new SlashCommandBuilder().setName("v").setDescription("Registrar venda"),
     new SlashCommandBuilder().setName("r").setDescription("Relatório"),
@@ -164,15 +166,18 @@ client.on("interactionCreate", async interaction => {
 
         return interaction.reply({
             content: "📦 Escolha o item:",
-            components: [new ActionRowBuilder().addComponents(menu)]
+            components: [new ActionRowBuilder().addComponents(menu)],
+            ephemeral: true
         });
     }
 
-    // ===== SELECT → ABRE MODAL =====
+    // ===== SELECT =====
     if (interaction.isStringSelectMenu() && interaction.customId === "item") {
-        const item = interaction.values[0];
+        const sessao = sessoes[interaction.user.id];
+        if (!sessao) return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
 
-        sessoes[interaction.user.id].itemAtual = item;
+        const item = interaction.values[0];
+        sessao.itemAtual = item;
 
         const modal = new ModalBuilder()
             .setCustomId("quantidade_modal")
@@ -189,19 +194,20 @@ client.on("interactionCreate", async interaction => {
         return interaction.showModal(modal);
     }
 
-    // ===== RECEBER QUANTIDADE =====
+    // ===== MODAL =====
     if (interaction.isModalSubmit() && interaction.customId === "quantidade_modal") {
         const sessao = sessoes[interaction.user.id];
         if (!sessao) return;
 
         const qtd = parseInt(interaction.fields.getTextInputValue("quantidade_input"));
-        if (isNaN(qtd) || qtd <= 0) {
+        if (isNaN(qtd) || qtd <= 0)
             return interaction.reply({ content: "❌ Quantidade inválida", ephemeral: true });
-        }
 
         const item = sessao.itemAtual;
 
-        sessao.itens[item] = qtd;
+        // 🔥 SOMA ao invés de substituir
+        sessao.itens[item] = (sessao.itens[item] || 0) + qtd;
+
         delete sessao.itemAtual;
 
         const row = new ActionRowBuilder().addComponents(
@@ -220,23 +226,28 @@ client.on("interactionCreate", async interaction => {
     // ===== BOTÕES =====
     if (interaction.isButton()) {
         const sessao = sessoes[interaction.user.id];
-        if (!sessao) return;
+        if (!sessao) return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
 
         if (interaction.customId === "cancelar") {
             delete sessoes[interaction.user.id];
-            return interaction.reply("❌ Cancelado");
+            return interaction.reply({ content: "❌ Cancelado", ephemeral: true });
         }
 
         if (interaction.customId === "add") {
             const restantes = Object.keys(precos).filter(i => !sessao.itens[i]);
 
+            if (restantes.length === 0)
+                return interaction.reply({ content: "⚠️ Todos itens já adicionados", ephemeral: true });
+
             const menu = new StringSelectMenuBuilder()
                 .setCustomId("item")
+                .setPlaceholder("Escolha outro item")
                 .addOptions(restantes.map(i => ({ label: i, value: i })));
 
             return interaction.reply({
-                content: "Escolha outro item:",
-                components: [new ActionRowBuilder().addComponents(menu)]
+                content: "📦 Escolha outro item:",
+                components: [new ActionRowBuilder().addComponents(menu)],
+                ephemeral: true
             });
         }
 
@@ -256,7 +267,8 @@ client.on("interactionCreate", async interaction => {
 
             return interaction.reply({
                 content: `Confirmar venda?\n\n${texto}\n💰 ${dinheiro(total)}`,
-                components: [row]
+                components: [row],
+                ephemeral: true
             });
         }
 
@@ -285,14 +297,14 @@ client.on("interactionCreate", async interaction => {
 
             delete sessoes[interaction.user.id];
 
-            return interaction.reply("✅ Venda registrada!");
+            return interaction.reply({ content: "✅ Venda registrada!", ephemeral: true });
         }
     }
 
     // ===== RELATÓRIO =====
     if (interaction.isChatInputCommand() && interaction.commandName === "r") {
         if (!interaction.member.roles.cache.has(CARGO_LIDER))
-            return interaction.reply("❌ Sem permissão");
+            return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
 
         let total = 0;
         let resumo = {};
@@ -318,20 +330,20 @@ client.on("interactionCreate", async interaction => {
         const canal = await client.channels.fetch(CANAL_RELATORIO);
         canal.send(texto);
 
-        return interaction.reply("📊 Enviado!");
+        return interaction.reply({ content: "📊 Enviado!", ephemeral: true });
     }
 
     // ===== RESET =====
     if (interaction.isChatInputCommand() && interaction.commandName === "reset") {
         if (!interaction.member.roles.cache.has(CARGO_LIDER))
-            return interaction.reply("❌ Sem permissão");
+            return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
 
         vendas = [];
-        return interaction.reply("🧹 Resetado!");
+        return interaction.reply({ content: "🧹 Resetado!", ephemeral: true });
     }
 });
 
-client.once("clientReady", () => {
+client.once("ready", () => {
     console.log(`🤖 Logado como ${client.user.tag}`);
 });
 
