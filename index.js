@@ -61,7 +61,7 @@ let sessoes = {};
 
 // ===== FUNÇÃO =====
 function dinheiro(v) {
-    return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    return "R$ " + Math.round(v).toLocaleString("pt-BR");
 }
 
 // ===== COMANDOS =====
@@ -148,7 +148,15 @@ client.on("interactionCreate", async interaction => {
                 }
             });
 
-            return interaction.editReply(`✅ Registrado: ${item} (${quantidade})`);
+            return interaction.editReply(
+`📊 **MOVIMENTAÇÃO REGISTRADA**
+
+👤 **Usuário:** ${user}
+📦 **Item:** ${item}
+🔄 **Tipo:** ${tipo === 'entrada' ? 'Entrada' : 'Saída'}
+🔢 **Quantidade:** ${quantidade}
+📅 **Data:** ${data}`
+);
         } catch (err) {
             console.error(err);
             return interaction.editReply("❌ Erro na planilha");
@@ -302,46 +310,116 @@ client.on("interactionCreate", async interaction => {
     }
 
     // ===== RELATÓRIO =====
-    if (interaction.isChatInputCommand() && interaction.commandName === "r") {
-        if (!interaction.member.roles.cache.has(CARGO_LIDER))
-            return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
+   if (interaction.isChatInputCommand() && interaction.commandName === "r") {
+    if (!interaction.member.roles.cache.has(CARGO_LIDER))
+        return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
 
-        let total = 0;
-        let resumo = {};
+    let totalGeral = 0;
+    let totalVendas = vendas.length;
 
-        for (let v of vendas) {
-            total += v.total;
+    let itens = {};
+    let usuarios = {};
 
-            for (let i in v.itens) {
-                if (!resumo[i]) resumo[i] = { qtd: 0, total: 0 };
-                resumo[i].qtd += v.itens[i];
-                resumo[i].total += v.itens[i] * precos[i];
+    for (let v of vendas) {
+        totalGeral += v.total;
+
+        // usuários
+        if (!usuarios[v.user]) usuarios[v.user] = 0;
+        usuarios[v.user] += v.total;
+
+        // itens
+        for (let i in v.itens) {
+            if (!itens[i]) {
+                itens[i] = {
+                    qtd: 0,
+                    total: 0,
+                    usuarios: {}
+                };
             }
+
+            const qtd = v.itens[i];
+
+            itens[i].qtd += qtd;
+            itens[i].total += qtd * precos[i];
+
+            if (!itens[i].usuarios[v.user]) itens[i].usuarios[v.user] = 0;
+            itens[i].usuarios[v.user] += qtd;
         }
-
-        let texto = "📊 RELATÓRIO\n\n";
-
-        for (let i in resumo) {
-            texto += `${i} — ${resumo[i].qtd} (${dinheiro(resumo[i].total)})\n`;
-        }
-
-        texto += `\n💰 TOTAL: ${dinheiro(total)}`;
-
-        const canal = await client.channels.fetch(CANAL_RELATORIO);
-        canal.send(texto);
-
-        return interaction.reply({ content: "📊 Enviado!", ephemeral: true });
     }
 
-    // ===== RESET =====
-    if (interaction.isChatInputCommand() && interaction.commandName === "reset") {
-        if (!interaction.member.roles.cache.has(CARGO_LIDER))
-            return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
+    // ITEM MAIS VENDIDO
+    let itemMaisVendido = null;
+    let maiorQtd = 0;
 
-        vendas = [];
-        return interaction.reply({ content: "🧹 Resetado!", ephemeral: true });
+    // ITEM MAIS CARO
+    let itemMaisValor = null;
+    let maiorValor = 0;
+
+    for (let i in itens) {
+        if (itens[i].qtd > maiorQtd) {
+            maiorQtd = itens[i].qtd;
+            itemMaisVendido = i;
+        }
+
+        if (itens[i].total > maiorValor) {
+            maiorValor = itens[i].total;
+            itemMaisValor = i;
+        }
     }
-});
+
+    // TOP VENDEDORES
+    const ranking = Object.entries(usuarios)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+    let texto = `📊 ═════ RELATÓRIO DE VENDAS ═════\n\n`;
+
+    // ITENS
+    for (let i in itens) {
+        const item = itens[i];
+
+        texto += `📦 ${i}\n`;
+        texto += `┣ 🔢 QTD: ${item.qtd}\n`;
+        texto += `┣ 💰 Total: ${dinheiro(item.total)}\n`;
+
+        const listaUsers = Object.entries(item.usuarios)
+            .map(u => `${u[0]} (${u[1]})`)
+            .join(" • ");
+
+        texto += `┗ 👤 ${listaUsers}\n\n`;
+    }
+
+    texto += `━━━━━━━━━━━━━━━━━━\n\n`;
+
+    // DESTAQUES
+    texto += `🏆 Item mais vendido: ${itemMaisVendido || "Nenhum"} (${maiorQtd}x)\n`;
+    texto += `💰 Maior faturamento: ${itemMaisValor || "Nenhum"} (${dinheiro(maiorValor)})\n\n`;
+
+    texto += `━━━━━━━━━━━━━━━━━━\n\n`;
+
+    // TOP
+    texto += `🏆 TOP VENDEDORES\n`;
+
+    const medalhas = ["🥇", "🥈", "🥉"];
+
+    ranking.forEach((v, i) => {
+        texto += `${medalhas[i]} ${v[0]} — ${dinheiro(v[1])}\n`;
+    });
+
+    texto += `\n━━━━━━━━━━━━━━━━━━\n\n`;
+
+    // FINAL
+    texto += `🧾 Total de vendas: ${totalVendas}\n`;
+    texto += `💰 TOTAL GERAL: ${dinheiro(totalGeral)}\n\n`;
+
+    texto += `👤 Gerado por: ${interaction.member.displayName}\n`;
+    texto += `📅 ${new Date().toLocaleString("pt-BR")}`;
+
+    const canal = await client.channels.fetch(CANAL_RELATORIO);
+    canal.send(texto);
+
+    return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
+}
 
 client.once("ready", () => {
     console.log(`🤖 Logado como ${client.user.tag}`);
