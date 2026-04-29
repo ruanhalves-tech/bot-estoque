@@ -8,7 +8,10 @@ const {
     ActionRowBuilder,
     StringSelectMenuBuilder,
     ButtonBuilder,
-    ButtonStyle
+    ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle
 } = require("discord.js");
 
 const { REST } = require("@discordjs/rest");
@@ -64,13 +67,11 @@ function dinheiro(v) {
 // ===== COMANDOS =====
 const commands = [
 
-    // 🔹 COMANDO PLANILHA
     new SlashCommandBuilder()
         .setName("mov")
         .setDescription("Movimentar estoque")
         .addStringOption(option =>
             option.setName("item")
-                .setDescription("Escolha o item")
                 .setRequired(true)
                 .addChoices(
                     { name: "Colete", value: "Colete" },
@@ -96,7 +97,6 @@ const commands = [
         )
         .addStringOption(option =>
             option.setName("tipo")
-                .setDescription("Tipo de movimentação")
                 .setRequired(true)
                 .addChoices(
                     { name: "Entrada", value: "entrada" },
@@ -105,11 +105,9 @@ const commands = [
         )
         .addIntegerOption(option =>
             option.setName("quantidade")
-                .setDescription("Quantidade")
                 .setRequired(true)
         ),
 
-    // 🔥 NOVOS
     new SlashCommandBuilder().setName("v").setDescription("Registrar venda"),
     new SlashCommandBuilder().setName("r").setDescription("Relatório"),
     new SlashCommandBuilder().setName("reset").setDescription("Resetar vendas")
@@ -117,7 +115,6 @@ const commands = [
 
 const rest = new REST({ version: "10" }).setToken(TOKEN);
 
-// ===== REGISTRAR =====
 (async () => {
     await rest.put(Routes.applicationCommands(CLIENT_ID), {
         body: commands
@@ -128,7 +125,7 @@ const rest = new REST({ version: "10" }).setToken(TOKEN);
 // ===== INTERAÇÕES =====
 client.on("interactionCreate", async interaction => {
 
-    // ===== MOV (PLANILHA) =====
+    // ===== PLANILHA =====
     if (interaction.isChatInputCommand() && interaction.commandName === "mov") {
         try {
             await interaction.deferReply();
@@ -148,17 +145,14 @@ client.on("interactionCreate", async interaction => {
                 }
             });
 
-            await interaction.editReply(
-                `📊 Movimentação registrada!\n\n👤 ${user}\n📦 ${item}\n🔄 ${tipo}\n🔢 ${quantidade}`
-            );
-
+            return interaction.editReply(`✅ Registrado: ${item} (${quantidade})`);
         } catch (err) {
             console.error(err);
-            await interaction.editReply("❌ Erro na planilha");
+            return interaction.editReply("❌ Erro na planilha");
         }
     }
 
-    // ===== VENDA =====
+    // ===== INICIAR VENDA =====
     if (interaction.isChatInputCommand() && interaction.commandName === "v") {
         sessoes[interaction.user.id] = { itens: {} };
 
@@ -173,13 +167,56 @@ client.on("interactionCreate", async interaction => {
         });
     }
 
-    if (interaction.isStringSelectMenu()) {
+    // ===== SELECT → ABRE MODAL =====
+    if (interaction.isStringSelectMenu() && interaction.customId === "item") {
         const item = interaction.values[0];
+
         sessoes[interaction.user.id].itemAtual = item;
 
-        return interaction.reply({ content: `Digite a quantidade de ${item}`, ephemeral: true });
+        const modal = new ModalBuilder()
+            .setCustomId("quantidade_modal")
+            .setTitle(`Quantidade de ${item}`);
+
+        const input = new TextInputBuilder()
+            .setCustomId("quantidade_input")
+            .setLabel("Digite a quantidade")
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+
+        modal.addComponents(new ActionRowBuilder().addComponents(input));
+
+        return interaction.showModal(modal);
     }
 
+    // ===== RECEBER QUANTIDADE =====
+    if (interaction.isModalSubmit() && interaction.customId === "quantidade_modal") {
+        const sessao = sessoes[interaction.user.id];
+        if (!sessao) return;
+
+        const qtd = parseInt(interaction.fields.getTextInputValue("quantidade_input"));
+        if (isNaN(qtd) || qtd <= 0) {
+            return interaction.reply({ content: "❌ Quantidade inválida", ephemeral: true });
+        }
+
+        const item = sessao.itemAtual;
+
+        sessao.itens[item] = qtd;
+        delete sessao.itemAtual;
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId("add").setLabel("➕ Adicionar mais").setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId("finalizar").setLabel("✅ Finalizar").setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId("cancelar").setLabel("❌ Cancelar").setStyle(ButtonStyle.Danger)
+        );
+
+        return interaction.reply({
+            content: `✅ ${item} (${qtd}) adicionado`,
+            components: [row],
+            ephemeral: true
+        });
+    }
+
+    // ===== BOTÕES =====
     if (interaction.isButton()) {
         const sessao = sessoes[interaction.user.id];
         if (!sessao) return;
@@ -207,8 +244,7 @@ client.on("interactionCreate", async interaction => {
             let texto = "";
 
             for (let i in sessao.itens) {
-                const v = precos[i] * sessao.itens[i];
-                total += v;
+                total += precos[i] * sessao.itens[i];
                 texto += `• ${i} — ${sessao.itens[i]}\n`;
             }
 
