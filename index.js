@@ -417,7 +417,7 @@ if (interaction.isChatInputCommand() && interaction.commandName === "r") {
         }
 
         const topVendedor = Object.entries(usuarios)
-            .sort((a, b) => b[1] - a[1])[0];
+    .sort((a, b) => b[1] - a[1])[0] || ["Nenhum", 0];
 
         embed.setDescription(
             description +
