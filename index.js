@@ -307,19 +307,54 @@ if (interaction.isStringSelectMenu() && interaction.customId === "item") {
         }
 
         if (interaction.customId === "confirmar") {
-            let total = 0;
+    let total = 0;
+    let textoItens = "";
 
-            for (let i in sessao.itens) {
-                total += precos[i] * sessao.itens[i];
-            }
+    const vendedor = interaction.member.displayName;
 
-            vendas.push({ user: interaction.member.displayName, itens: sessao.itens, total });
+    for (let i in sessao.itens) {
+        const qtd = sessao.itens[i];
+        const valorItem = precos[i] * qtd;
 
-            delete sessoes[interaction.user.id];
+        total += valorItem;
 
-            return interaction.reply({ content: "✅ Venda registrada!", ephemeral: true });
-        }
+        textoItens += `┣ ${i} — ${qtd}\n`;
+        textoItens += `┃ 💰 R$ ${precos[i]}\n`;
+        textoItens += `┃ 💵 R$ ${valorItem}\n`;
     }
+
+    // salva venda
+    vendas.push({
+        user: vendedor,
+        itens: sessao.itens,
+        total
+    });
+
+    delete sessoes[interaction.user.id];
+
+    // 🔥 LOG NO CANAL
+    const canal = await client.channels.fetch(CANAL_RELATORIO).catch(() => null);
+
+    if (canal) {
+        const embed = new EmbedBuilder()
+            .setTitle("📊 NOVA VENDA")
+            .setColor(0xff0000)
+            .setDescription(
+`👤 **${vendedor}**
+
+${textoItens}
+
+💰 **TOTAL: R$ ${total.toLocaleString("pt-BR")}**`
+            );
+
+        await canal.send({ embeds: [embed] });
+    }
+
+    return interaction.reply({
+        content: "✅ Venda registrada!",
+        ephemeral: true
+    });
+}
 
     // ===== RELATÓRIO =====
 if (interaction.isChatInputCommand() && interaction.commandName === "r") {
