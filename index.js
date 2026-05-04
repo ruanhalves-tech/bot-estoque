@@ -91,7 +91,7 @@ const commands = [
     .setDescription("Movimentar estoque")
     .addStringOption(option =>
         option.setName("item")
-            .setDescription("Escolha o item") // ✅
+            .setDescription("Escolha o item")
             .setRequired(true)
             .addChoices(
                 { name: "Colete", value: "Colete" },
@@ -117,7 +117,7 @@ const commands = [
     )
     .addStringOption(option =>
         option.setName("tipo")
-            .setDescription("Entrada ou saída") // ✅
+            .setDescription("Entrada ou saída")
             .setRequired(true)
             .addChoices(
                 { name: "Entrada", value: "entrada" },
@@ -126,7 +126,7 @@ const commands = [
     )
     .addIntegerOption(option =>
         option.setName("quantidade")
-            .setDescription("Quantidade do item") // ✅
+            .setDescription("Quantidade do item")
             .setRequired(true)
     ),
 
@@ -149,7 +149,6 @@ const rest = new REST({ version: "10" }).setToken(TOKEN);
 // ===== INTERAÇÕES =====
 client.on("interactionCreate", async interaction => {
 
-    // ===== MOV =====
     if (interaction.isChatInputCommand() && interaction.commandName === "mov") {
         try {
             await interaction.deferReply();
@@ -161,335 +160,49 @@ client.on("interactionCreate", async interaction => {
             const data = new Date().toLocaleString("pt-BR");
 
             const planilha = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: "Movimentação!A:E",
-});
+                spreadsheetId: SHEET_ID,
+                range: "Movimentação!A:E",
+            });
 
-const linhas = planilha.data.values || [];
+            const linhas = planilha.data.values || [];
 
-let linhaLivre = 1;
+            let linhaLivre = 1;
 
-for (let i = 0; i < linhas.length; i++) {
-    if (!linhas[i] || linhas[i].length === 0 || linhas[i].every(c => c === "")) {
-        linhaLivre = i + 1;
-        break;
-    }
-}
+            for (let i = 0; i < linhas.length; i++) {
+                if (!linhas[i] || linhas[i].length === 0 || linhas[i].every(c => c === "")) {
+                    linhaLivre = i + 1;
+                    break;
+                }
+            }
 
-await sheets.spreadsheets.values.update({
-    spreadsheetId: SHEET_ID,
-    range: `Movimentação!A${linhaLivre}:E${linhaLivre}`,
-    valueInputOption: "USER_ENTERED",
-    resource: {
-        values: [[data, item, tipo === 'entrada' ? 'Entrada' : 'Saída', quantidade, user]]
-    }
-});
+            await sheets.spreadsheets.values.update({
+                spreadsheetId: SHEET_ID,
+                range: `Movimentação!A${linhaLivre}:E${linhaLivre}`,
+                valueInputOption: "USER_ENTERED",
+                resource: {
+                    values: [[data, item, tipo === 'entrada' ? 'Entrada' : 'Saída', quantidade, user]]
+                }
+            });
 
             const embed = new EmbedBuilder()
-    .setTitle("📊 MOVIMENTAÇÃO REGISTRADA")
-    .setColor(tipo === "entrada" ? 0x00ff00 : 0xff0000)
-    .addFields(
-        { name: "👤 Usuário", value: user, inline: true },
-        { name: "📦 Item", value: item, inline: true },
-        { name: "🔄 Tipo", value: tipo === "entrada" ? "Entrada" : "Saída", inline: true },
-        { name: "🔢 Quantidade", value: String(quantidade), inline: true },
-        { name: "📅 Data", value: data }
-    )
-    .setFooter({ text: "Sistema de Estoque" });
+            .setTitle("📊 MOVIMENTAÇÃO REGISTRADA")
+            .setColor(tipo === "entrada" ? 0x00ff00 : 0xff0000)
+            .addFields(
+                { name: "👤 Usuário", value: user, inline: true },
+                { name: "📦 Item", value: item, inline: true },
+                { name: "🔄 Tipo", value: tipo === "entrada" ? "Entrada" : "Saída", inline: true },
+                { name: "🔢 Quantidade", value: String(quantidade), inline: true },
+                { name: "📅 Data", value: data }
+            )
+            .setFooter({ text: "Sistema de Estoque" });
 
-return interaction.editReply({
-    embeds: [embed]
-});
+            return interaction.editReply({ embeds: [embed] });
+
         } catch (err) {
             console.error("ERRO PLANILHA:", err.response?.data || err.message);
             return interaction.editReply("❌ Erro na planilha");
         }
     }
 
-    // ===== INICIAR VENDA =====
-if (interaction.isChatInputCommand() && interaction.commandName === "v") {
-    sessoes[interaction.user.id] = { itens: {} };
-
-    const menu = new StringSelectMenuBuilder()
-        .setCustomId("item")
-        .setPlaceholder("Escolha o item")
-        .addOptions(Object.keys(precos).map(i => ({ label: i, value: i })));
-
-    return interaction.reply({
-        content: `${painel(sessoes[interaction.user.id])}\n\n📦 Escolha o item:`,
-        components: [new ActionRowBuilder().addComponents(menu)],
-        ephemeral: true
-    });
-}
-
-// ===== SELECT =====
-if (interaction.isStringSelectMenu() && interaction.customId === "item") {
-    const sessao = sessoes[interaction.user.id];
-    if (!sessao) return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
-
-    const itensSelecionados = interaction.values;
-
-    // salva lista de itens selecionados
-    sessao.itensTemp = itensSelecionados;
-
-    const modal = new ModalBuilder()
-        .setCustomId("quantidade_multi_modal")
-        .setTitle("Quantidade dos itens");
-
-    const input = new TextInputBuilder()
-        .setCustomId("quantidade_input")
-        .setLabel("Digite quantidades separadas por vírgula")
-        .setPlaceholder("Ex: 2,5,1 (na mesma ordem dos itens)")
-        .setStyle(TextInputStyle.Short)
-        .setRequired(true);
-
-    modal.addComponents(new ActionRowBuilder().addComponents(input));
-
-    await interaction.showModal(modal);
-}
-
-    // ===== MODAL =====
-    if (interaction.isModalSubmit() && interaction.customId === "quantidade_modal") {
-        const sessao = sessoes[interaction.user.id];
-        if (!sessao) return;
-
-        const qtd = parseInt(interaction.fields.getTextInputValue("quantidade_input"));
-        if (isNaN(qtd) || qtd <= 0)
-            return interaction.reply({ content: "❌ Quantidade inválida", ephemeral: true });
-
-        const item = sessao.itemAtual;
-
-        if (sessao.itens[item]) {
-            return interaction.reply({ content: "❌ Esse item já foi adicionado", ephemeral: true });
-        }
-
-        sessao.itens[item] = qtd;
-        delete sessao.itemAtual;
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("add").setLabel("➕ Adicionar mais").setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId("finalizar").setLabel("✅ Finalizar").setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId("cancelar").setLabel("❌ Cancelar").setStyle(ButtonStyle.Danger)
-        );
-
-        return interaction.reply({
-            content: `${painel(sessao)}\n\n✅ ${item} (${qtd}) adicionado`,
-            components: [row],
-            ephemeral: true
-        });
-    }
-
-    // ===== BOTÕES =====
-    if (interaction.isButton()) {
-        const sessao = sessoes[interaction.user.id];
-        if (!sessao) return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
-
-        if (interaction.customId === "cancelar") {
-            delete sessoes[interaction.user.id];
-            return interaction.reply({ content: "❌ Cancelado", ephemeral: true });
-        }
-
-        if (interaction.customId === "add") {
-            const restantes = Object.keys(precos).filter(i => !sessao.itens[i]);
-
-            const menu = new StringSelectMenuBuilder()
-                .setCustomId("item")
-                .setPlaceholder("Escolha outro item")
-                .addOptions(restantes.map(i => ({ label: i, value: i })));
-
-            return interaction.reply({
-                content: `${painel(sessao)}\n\n📦 Escolha outro item:`,
-                components: [new ActionRowBuilder().addComponents(menu)],
-                ephemeral: true
-            });
-        }
-
-                if (interaction.customId === "finalizar") {
-            let total = 0;
-            let texto = "";
-
-            for (let i in sessao.itens) {
-                total += precos[i] * sessao.itens[i];
-                texto += `• ${i} — ${sessao.itens[i]}\n`;
-            }
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId("confirmar").setLabel("Confirmar").setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId("cancelar").setLabel("Cancelar").setStyle(ButtonStyle.Danger)
-            );
-
-            return interaction.reply({
-                content: `Confirmar venda?\n\n${texto}\n💰 ${dinheiro(total)}`,
-                components: [row],
-                ephemeral: true
-            });
-        }
-
-        if (interaction.customId === "confirmar") {
-            let total = 0;
-            let textoItens = "";
-
-            const vendedor = interaction.member.displayName;
-
-            for (let i in sessao.itens) {
-                const qtd = sessao.itens[i];
-                const valorItem = precos[i] * qtd;
-
-                total += valorItem;
-
-                textoItens += `┣ ${i} — ${qtd}\n`;
-                textoItens += `┃ 💰 R$ ${precos[i]}\n`;
-                textoItens += `┃ 💵 R$ ${valorItem}\n`;
-            }
-
-            vendas.push({
-                user: vendedor,
-                itens: sessao.itens,
-                total
-            });
-
-            delete sessoes[interaction.user.id];
-
-            // 🔥 LOG NO CANAL
-            const canal = await client.channels.fetch(CANAL_LIDER).catch(() => null);
-
-            if (canal) {
-                const embed = new EmbedBuilder()
-                    .setTitle("📊 NOVA VENDA")
-                    .setColor(0xff0000)
-                    .setDescription(
-`👤 **${vendedor}**
-
-${textoItens}
-
-💰 **TOTAL: R$ ${total.toLocaleString("pt-BR")}**`
-                    );
-
-                await canal.send({ embeds: [embed] });
-            }
-
-            return interaction.reply({
-                content: "✅ Venda registrada!",
-                ephemeral: true
-            });
-        }
-
-    } // ✅ FECHA AQUI O if (interaction.isButton())
-
-// ===== RELATÓRIO =====
-if (interaction.isChatInputCommand() && interaction.commandName === "r") {
-    try {
-
-        if (!interaction.member.roles.cache.has(CARGO_LIDER))
-            return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
-
-        let totalGeral = 0;
-        let totalVendas = vendas.length;
-
-        let itens = {};
-        let usuarios = {};
-
-        for (let v of vendas) {
-            totalGeral += v.total;
-
-            if (!usuarios[v.user]) usuarios[v.user] = 0;
-            usuarios[v.user] += v.total;
-
-            for (let i in v.itens) {
-                if (!itens[i]) {
-                    itens[i] = { qtd: 0, total: 0, usuarios: {} };
-                }
-
-                const qtd = v.itens[i];
-
-                itens[i].qtd += qtd;
-                itens[i].total += qtd * precos[i];
-
-                if (!itens[i].usuarios[v.user]) itens[i].usuarios[v.user] = 0;
-                itens[i].usuarios[v.user] += qtd;
-            }
-        }
-
-        const embed = new EmbedBuilder()
-            .setTitle("📊 ═════ RELATÓRIO DE VENDAS ═════")
-            .setColor(0xff0000)
-            .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-            .setFooter({ text: `Gerado por ${interaction.member.displayName}` });
-
-        let description = "";
-
-        const topItens = Object.entries(itens)
-            .sort((a, b) => b[1].qtd - a[1].qtd)
-            .slice(0, 3);
-
-        for (let [nome, data] of topItens) {
-            const vendedor = Object.keys(data.usuarios)[0] || interaction.member.displayName;
-            const qtd = data.qtd;
-
-            description += 
-`📦 **${nome}**
-┣ 🔢 QTD: ${qtd}
-┣ 💰 Total: R$ ${data.total.toLocaleString("pt-BR")}
-┗ 👤 ${vendedor} | ${qtd}
-
-`;
-        }
-
-        const topVendedor = Object.entries(usuarios)
-    .sort((a, b) => b[1] - a[1])[0] || ["Nenhum", 0];
-
-        embed.setDescription(
-            description +
-            `━━━━━━━━━━━━━━━━━━\n\n🏆 TOP VENDEDORES\n🥇 ${topVendedor[0]} — R$ ${topVendedor[1].toLocaleString("pt-BR")}\n\n━━━━━━━━━━━━━━━━━━\n\n🧾 Total de vendas: ${totalVendas}\n💰 TOTAL GERAL: R$ ${totalGeral.toLocaleString("pt-BR")}`
-        );
-
-        const canal = await client.channels.fetch(CANAL_RELATORIO).catch(() => null);
-
-        if (!canal) {
-            return interaction.reply({ content: "❌ Canal não encontrado", ephemeral: true });
-        }
-
-        await canal.send({ embeds: [embed] });
-
-        return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
-
-    } catch (err) {
-        console.error("ERRO AO ENVIAR RELATÓRIO:", err);
-        return interaction.reply({ content: "❌ Erro ao enviar relatório", ephemeral: true });
-    }
-}
-// ===== RESET =====
-if (interaction.isChatInputCommand() && interaction.commandName === "reset") {
-    try {
-
-        if (!interaction.member.roles.cache.has(CARGO_LIDER)) {
-            return interaction.reply({
-                content: "❌ Sem permissão",
-                ephemeral: true
-            });
-        }
-
-        vendas.length = 0;
-        sessoes = {};
-
-        return interaction.reply({
-            content: "🧹 Sistema de vendas resetado com sucesso!",
-            ephemeral: true
-        });
-
-    } catch (err) {
-        console.error("ERRO RESET:", err);
-        return interaction.reply({
-            content: "❌ Erro ao resetar sistema",
-            ephemeral: true
-        });
-    }
-}
-
-}); // interactionCreate FECHA AQUI
-
-client.once("ready", () => {
-    console.log(`🤖 Logado como ${client.user.tag}`);
 });
-
 client.login(TOKEN);
