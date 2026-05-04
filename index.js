@@ -191,8 +191,8 @@ client.on("interactionCreate", async interaction => {
         });
     }
 
-    // ===== SELECT =====
-   if (interaction.isStringSelectMenu() && interaction.customId === "item") {
+   // ===== SELECT =====
+if (interaction.isStringSelectMenu() && interaction.customId === "item") {
     const sessao = sessoes[interaction.user.id];
     if (!sessao) {
         return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
@@ -213,13 +213,12 @@ client.on("interactionCreate", async interaction => {
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
 
-    // ✅ PRIMEIRO abre o modal
-    await interaction.showModal(modal);
-
-    // ✅ DEPOIS desativa o menu antigo
-    await interaction.message.edit({
+    // ✅ CORREÇÃO AQUI (ORDEM CERTA)
+    await interaction.update({
         components: []
     });
+
+    await interaction.showModal(modal);
 }
 
     // ===== MODAL =====
