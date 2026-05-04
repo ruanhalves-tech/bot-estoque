@@ -211,7 +211,7 @@ client.on("interactionCreate", async interaction => {
 
         modal.addComponents(new ActionRowBuilder().addComponents(input));
 
-        await interaction.deferUpdate(); // trava o menu antigo
+        await interaction.showModal(modal); // trava o menu antigo
 
     }
 
