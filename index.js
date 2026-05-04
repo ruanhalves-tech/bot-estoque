@@ -373,6 +373,7 @@ if (interaction.isChatInputCommand() && interaction.commandName === "r") {
 
         return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
 
+    
     } catch (err) {
         console.error("ERRO AO ENVIAR RELATÓRIO:", err);
         return interaction.reply({ content: "❌ Erro ao enviar relatório", ephemeral: true });
@@ -406,11 +407,10 @@ if (interaction.isChatInputCommand() && interaction.commandName === "reset") {
         });
     }
 }
-}
 
-}); // ✅ ESSA LINHA FALTAVA
+}); // interactionCreate FECHA AQUI
 
-client.once("clientReady", () => {
+client.once("ready", () => {
     console.log(`🤖 Logado como ${client.user.tag}`);
 });
 
