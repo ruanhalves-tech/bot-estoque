@@ -64,6 +64,26 @@ function dinheiro(v) {
     return "R$ " + Math.round(v).toLocaleString("pt-BR");
 }
 
+// 👇 COLE AQUI EMBAIXO
+function painel(sessao) {
+    let lista = Object.entries(sessao.itens)
+        .map(([i, q]) => `• ${i} (${q})`)
+        .join("\n");
+
+    if (!lista) lista = "Nenhum item ainda";
+
+    const total = Object.keys(precos).length;
+    const atual = Object.keys(sessao.itens).length;
+
+    return `🛒 SEU CARRINHO
+
+${lista}
+
+━━━━━━━━━━━━━━
+📊 Progresso: ${atual}/${total} itens
+━━━━━━━━━━━━━━`;
+}
+
 // ===== COMANDOS =====
 const commands = [
 
@@ -165,7 +185,7 @@ client.on("interactionCreate", async interaction => {
             .addOptions(Object.keys(precos).map(i => ({ label: i, value: i })));
 
         return interaction.reply({
-            content: "📦 Escolha o item:",
+           content: `${painel(sessoes[interaction.user.id])}\n\n📦 Escolha o item:`,
             components: [new ActionRowBuilder().addComponents(menu)],
             ephemeral: true
         });
@@ -191,7 +211,12 @@ client.on("interactionCreate", async interaction => {
 
         modal.addComponents(new ActionRowBuilder().addComponents(input));
 
-        return interaction.showModal(modal);
+        await interaction.update({
+    content: `${painel(sessao)}\n\n✅ Item selecionado`,
+    components: []
+});
+
+return interaction.showModal(modal);
     }
 
     // ===== MODAL =====
@@ -215,7 +240,7 @@ client.on("interactionCreate", async interaction => {
         );
 
         return interaction.reply({
-            content: `✅ ${item} (${qtd}) adicionado`,
+            content: `${painel(sessao)}\n\n✅ ${item} (${qtd}) adicionado`,
             components: [row],
             ephemeral: true
         });
@@ -243,7 +268,7 @@ client.on("interactionCreate", async interaction => {
                 .addOptions(restantes.map(i => ({ label: i, value: i })));
 
             return interaction.reply({
-                content: "📦 Escolha outro item:",
+                content: `${painel(sessao)}\n\n📦 Escolha outro item:`,
                 components: [new ActionRowBuilder().addComponents(menu)],
                 ephemeral: true
             });
