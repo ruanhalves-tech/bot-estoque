@@ -213,12 +213,7 @@ if (interaction.isStringSelectMenu() && interaction.customId === "item") {
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
 
-    // ✅ CORREÇÃO AQUI (ORDEM CERTA)
-    await interaction.update({
-        components: []
-    });
-
-    await interaction.showModal(modal);
+    return interaction.showModal(modal);
 }
 
     // ===== MODAL =====
