@@ -132,7 +132,9 @@ const commands = [
 
     new SlashCommandBuilder().setName("v").setDescription("Registrar venda"),
     new SlashCommandBuilder().setName("r").setDescription("Relatório"),
-    new SlashCommandBuilder().setName("reset").setDescription("Resetar vendas")
+    new SlashCommandBuilder()
+  .setName("reset")
+  .setDescription("Resetar todo o sistema de vendas (histórico + sessões)")
 ];
 
 const rest = new REST({ version: "10" }).setToken(TOKEN);
@@ -349,7 +351,34 @@ if (interaction.isChatInputCommand() && interaction.commandName === "r") {
             if (!itens[i].usuarios[v.user]) itens[i].usuarios[v.user] = 0;
             itens[i].usuarios[v.user] += qtd;
         }
+    }// ===== RESET =====
+if (interaction.isChatInputCommand() && interaction.commandName === "reset") {
+    try {
+
+        if (!interaction.member.roles.cache.has(CARGO_LIDER)) {
+            return interaction.reply({
+                content: "❌ Sem permissão",
+                ephemeral: true
+            });
+        }
+
+        // limpa vendas e sessões
+        vendas.length = 0;
+        sessoes = {};
+
+        return interaction.reply({
+            content: "🧹 Sistema de vendas resetado com sucesso!",
+            ephemeral: true
+        });
+
+    } catch (err) {
+        console.error("ERRO RESET:", err);
+        return interaction.reply({
+            content: "❌ Erro ao resetar sistema",
+            ephemeral: true
+        });
     }
+}
 
     let texto = `📊 RELATÓRIO DE VENDAS\n\n`;
 
