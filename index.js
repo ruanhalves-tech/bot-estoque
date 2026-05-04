@@ -11,7 +11,8 @@ const {
     ButtonStyle,
     ModalBuilder,
     TextInputBuilder,
-    TextInputStyle
+    TextInputStyle,
+    EmbedBuilder
 } = require("discord.js");
 
 const { REST } = require("@discordjs/rest");
@@ -166,7 +167,21 @@ client.on("interactionCreate", async interaction => {
                 }
             });
 
-            return interaction.editReply(`📊 MOVIMENTAÇÃO REGISTRADA\n\n${item} (${quantidade})`);
+            const embed = new EmbedBuilder()
+    .setTitle("📊 MOVIMENTAÇÃO REGISTRADA")
+    .setColor(tipo === "entrada" ? 0x00ff00 : 0xff0000)
+    .addFields(
+        { name: "👤 Usuário", value: user, inline: true },
+        { name: "📦 Item", value: item, inline: true },
+        { name: "🔄 Tipo", value: tipo === "entrada" ? "Entrada" : "Saída", inline: true },
+        { name: "🔢 Quantidade", value: String(quantidade), inline: true },
+        { name: "📅 Data", value: data }
+    )
+    .setFooter({ text: "Sistema de Estoque" });
+
+return interaction.editReply({
+    embeds: [embed]
+});
         } catch (err) {
             console.error("ERRO PLANILHA:", err.response?.data || err.message);
             return interaction.editReply("❌ Erro na planilha");
@@ -305,14 +320,62 @@ if (interaction.isStringSelectMenu() && interaction.customId === "item") {
     }
 
     // ===== RELATÓRIO =====
-    if (interaction.isChatInputCommand() && interaction.commandName === "r") {
-        if (!interaction.member.roles.cache.has(CARGO_LIDER))
-            return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
+if (interaction.isChatInputCommand() && interaction.commandName === "r") {
+    if (!interaction.member.roles.cache.has(CARGO_LIDER))
+        return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
 
-        return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
+    let totalGeral = 0;
+    let totalVendas = vendas.length;
+
+    let itens = {};
+    let usuarios = {};
+
+    for (let v of vendas) {
+        totalGeral += v.total;
+
+        if (!usuarios[v.user]) usuarios[v.user] = 0;
+        usuarios[v.user] += v.total;
+
+        for (let i in v.itens) {
+            if (!itens[i]) {
+                itens[i] = { qtd: 0, total: 0, usuarios: {} };
+            }
+
+            const qtd = v.itens[i];
+
+            itens[i].qtd += qtd;
+            itens[i].total += qtd * precos[i];
+
+            if (!itens[i].usuarios[v.user]) itens[i].usuarios[v.user] = 0;
+            itens[i].usuarios[v.user] += qtd;
+        }
     }
 
-});
+    let texto = `📊 RELATÓRIO DE VENDAS\n\n`;
+
+    for (let i in itens) {
+        texto += `📦 ${i} — ${itens[i].qtd}x | 💰 ${dinheiro(itens[i].total)}\n`;
+    }
+
+    texto += `\n💰 TOTAL GERAL: ${dinheiro(totalGeral)}\n`;
+    texto += `🧾 TOTAL DE VENDAS: ${totalVendas}`;
+
+    try {
+        const canal = await client.channels.fetch(CANAL_RELATORIO);
+
+        if (!canal) {
+            return interaction.reply({ content: "❌ Canal não encontrado", ephemeral: true });
+        }
+
+        await canal.send(texto);
+
+        return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
+
+    } catch (err) {
+        console.error("ERRO AO ENVIAR RELATÓRIO:", err);
+        return interaction.reply({ content: "❌ Erro ao enviar relatório", ephemeral: true });
+    }
+}
 
 client.once("clientReady", () => {
     console.log(`🤖 Logado como ${client.user.tag}`);
