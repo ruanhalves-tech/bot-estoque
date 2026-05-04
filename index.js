@@ -357,7 +357,7 @@ ${textoItens}
 
     } // ✅ FECHA AQUI O if (interaction.isButton())
 
-// ===== RELATÓRIO =====
+// // ===== RELATÓRIO =====
 if (interaction.isChatInputCommand() && interaction.commandName === "r") {
     if (!interaction.member.roles.cache.has(CARGO_LIDER))
         return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
@@ -389,10 +389,10 @@ if (interaction.isChatInputCommand() && interaction.commandName === "r") {
         }
     }
 
-    let texto = `📊 RELATÓRIO DE VENDAS\n\n`;
+    let texto = "";
 
     for (let i in itens) {
-        texto += `📦 ${i} — ${itens[i].qtd}x | 💰 ${dinheiro(itens[i].total)}\n`;
+        texto += `• ${i} — QTD: ${itens[i].qtd} — ${dinheiro(itens[i].total)}\n`;
     }
 
     texto += `\n💰 TOTAL GERAL: ${dinheiro(totalGeral)}\n`;
@@ -405,15 +405,25 @@ if (interaction.isChatInputCommand() && interaction.commandName === "r") {
             return interaction.reply({ content: "❌ Canal não encontrado", ephemeral: true });
         }
 
-        await canal.send(texto);
+        const embed = new EmbedBuilder()
+            .setColor(0xff0000)
+            .setTitle("📊 RELATÓRIO DE VENDAS")
+            .setAuthor({
+                name: interaction.user.displayName,
+                iconURL: interaction.user.displayAvatarURL({ dynamic: true })
+            })
+            .setDescription(texto)
+            .setFooter({ text: "Sistema de Vendas" });
+
+        await canal.send({ embeds: [embed] });
 
         return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
 
-    
     } catch (err) {
         console.error("ERRO AO ENVIAR RELATÓRIO:", err);
         return interaction.reply({ content: "❌ Erro ao enviar relatório", ephemeral: true });
     }
+}
 }
 
 // ===== RESET =====
