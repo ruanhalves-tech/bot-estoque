@@ -199,7 +199,6 @@ client.on("interactionCreate", async interaction => {
 
     await interaction.showModal(modal);
 }
-}
 
     // ===== MODAL =====
     if (interaction.isModalSubmit() && interaction.customId === "quantidade_modal") {
