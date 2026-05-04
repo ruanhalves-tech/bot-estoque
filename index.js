@@ -85,46 +85,49 @@ ${lista}
 
 // ===== COMANDOS =====
 const commands = [
-    new SlashCommandBuilder()
-        .setName("mov")
-        .setDescription("Movimentar estoque")
-        .addStringOption(option =>
-            option.setName("item")
-                .setRequired(true)
-                .addChoices(
-                    { name: "Colete", value: "Colete" },
-                    { name: "Drogas", value: "Drogas" },
-                    { name: "C4", value: "C4" },
-                    { name: "SMG", value: "SMG" },
-                    { name: "PT", value: "PT" },
-                    { name: "Fuzil", value: "Fuzil" },
-                    { name: "MuniSMG", value: "MuniSMG" },
-                    { name: "MuniPT", value: "MuniPT" },
-                    { name: "MuniFuzil", value: "MuniFuzil" },
-                    { name: "Lockpick", value: "Lockpick" },
-                    { name: "ReparoComum", value: "ReparoComum" },
-                    { name: "ReparoEpico", value: "ReparoEpico" },
-                    { name: "ReparoLendario", value: "ReparoLendario" },
-                    { name: "Soro", value: "Soro" },
-                    { name: "Adrenalina", value: "Adrenalina" },
-                    { name: "SuperDroga", value: "SuperDroga" },
-                    { name: "pulseira", value: "pulseira" },
-                    { name: "KitRaro", value: "KitRaro" },
-                    { name: "Algema", value: "Algema" }
-                )
-        )
-        .addStringOption(option =>
-            option.setName("tipo")
-                .setRequired(true)
-                .addChoices(
-                    { name: "Entrada", value: "entrada" },
-                    { name: "Saída", value: "saida" }
-                )
-        )
-        .addIntegerOption(option =>
-            option.setName("quantidade")
-                .setRequired(true)
-        ),
+  new SlashCommandBuilder()
+    .setName("mov")
+    .setDescription("Movimentar estoque")
+    .addStringOption(option =>
+        option.setName("item")
+            .setDescription("Escolha o item") // ✅
+            .setRequired(true)
+            .addChoices(
+                { name: "Colete", value: "Colete" },
+                { name: "Drogas", value: "Drogas" },
+                { name: "C4", value: "C4" },
+                { name: "SMG", value: "SMG" },
+                { name: "PT", value: "PT" },
+                { name: "Fuzil", value: "Fuzil" },
+                { name: "MuniSMG", value: "MuniSMG" },
+                { name: "MuniPT", value: "MuniPT" },
+                { name: "MuniFuzil", value: "MuniFuzil" },
+                { name: "Lockpick", value: "Lockpick" },
+                { name: "ReparoComum", value: "ReparoComum" },
+                { name: "ReparoEpico", value: "ReparoEpico" },
+                { name: "ReparoLendario", value: "ReparoLendario" },
+                { name: "Soro", value: "Soro" },
+                { name: "Adrenalina", value: "Adrenalina" },
+                { name: "SuperDroga", value: "SuperDroga" },
+                { name: "pulseira", value: "pulseira" },
+                { name: "KitRaro", value: "KitRaro" },
+                { name: "Algema", value: "Algema" }
+            )
+    )
+    .addStringOption(option =>
+        option.setName("tipo")
+            .setDescription("Entrada ou saída") // ✅
+            .setRequired(true)
+            .addChoices(
+                { name: "Entrada", value: "entrada" },
+                { name: "Saída", value: "saida" }
+            )
+    )
+    .addIntegerOption(option =>
+        option.setName("quantidade")
+            .setDescription("Quantidade do item") // ✅
+            .setRequired(true)
+    ),
 
     new SlashCommandBuilder().setName("v").setDescription("Registrar venda"),
     new SlashCommandBuilder().setName("r").setDescription("Relatório"),
