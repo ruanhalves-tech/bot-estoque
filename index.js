@@ -359,87 +359,86 @@ ${textoItens}
 
 // ===== RELATÓRIO =====
 if (interaction.isChatInputCommand() && interaction.commandName === "r") {
-    if (!interaction.member.roles.cache.has(CARGO_LIDER))
-        return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
+    try {
 
-    let totalGeral = 0;
-    let totalVendas = vendas.length;
+        if (!interaction.member.roles.cache.has(CARGO_LIDER))
+            return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
 
-    let itens = {};
-    let usuarios = {};
+        let totalGeral = 0;
+        let totalVendas = vendas.length;
 
-    for (let v of vendas) {
-        totalGeral += v.total;
+        let itens = {};
+        let usuarios = {};
 
-        if (!usuarios[v.user]) usuarios[v.user] = 0;
-        usuarios[v.user] += v.total;
+        for (let v of vendas) {
+            totalGeral += v.total;
 
-        for (let i in v.itens) {
-            if (!itens[i]) {
-                itens[i] = { qtd: 0, total: 0, usuarios: {} };
+            if (!usuarios[v.user]) usuarios[v.user] = 0;
+            usuarios[v.user] += v.total;
+
+            for (let i in v.itens) {
+                if (!itens[i]) {
+                    itens[i] = { qtd: 0, total: 0, usuarios: {} };
+                }
+
+                const qtd = v.itens[i];
+
+                itens[i].qtd += qtd;
+                itens[i].total += qtd * precos[i];
+
+                if (!itens[i].usuarios[v.user]) itens[i].usuarios[v.user] = 0;
+                itens[i].usuarios[v.user] += qtd;
             }
-
-            const qtd = v.itens[i];
-
-            itens[i].qtd += qtd;
-            itens[i].total += qtd * precos[i];
-
-            if (!itens[i].usuarios[v.user]) itens[i].usuarios[v.user] = 0;
-            itens[i].usuarios[v.user] += qtd;
         }
-    }
 
-    const embed = new EmbedBuilder()
-        .setTitle("📊 ═════ RELATÓRIO DE VENDAS ═════")
-        .setColor(0xff0000)
-        .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-        .setFooter({ text: `Gerado por ${interaction.member.displayName}` });
+        const embed = new EmbedBuilder()
+            .setTitle("📊 ═════ RELATÓRIO DE VENDAS ═════")
+            .setColor(0xff0000)
+            .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
+            .setFooter({ text: `Gerado por ${interaction.member.displayName}` });
 
-    let description = "";
+        let description = "";
 
-    // TOP 3 itens (simples)
-    const topItens = Object.entries(itens)
-        .sort((a, b) => b[1].qtd - a[1].qtd)
-        .slice(0, 3);
+        const topItens = Object.entries(itens)
+            .sort((a, b) => b[1].qtd - a[1].qtd)
+            .slice(0, 3);
 
-    for (let [nome, data] of topItens) {
-        const vendedor = Object.keys(data.usuarios)[0] || interaction.member.displayName;
-        const qtd = data.qtd;
+        for (let [nome, data] of topItens) {
+            const vendedor = Object.keys(data.usuarios)[0] || interaction.member.displayName;
+            const qtd = data.qtd;
 
-        description += 
+            description += 
 `📦 **${nome}**
 ┣ 🔢 QTD: ${qtd}
 ┣ 💰 Total: R$ ${data.total.toLocaleString("pt-BR")}
 ┗ 👤 ${vendedor} | ${qtd}
 
 `;
-    }
+        }
 
-    // TOP vendedor
-    const topVendedor = Object.entries(usuarios)
-        .sort((a, b) => b[1] - a[1])[0];
+        const topVendedor = Object.entries(usuarios)
+            .sort((a, b) => b[1] - a[1])[0];
 
-    embed.setDescription(
-        description +
-        `━━━━━━━━━━━━━━━━━━\n\n🏆 TOP VENDEDORES\n🥇 ${topVendedor[0]} — R$ ${topVendedor[1].toLocaleString("pt-BR")}\n\n━━━━━━━━━━━━━━━━━━\n\n🧾 Total de vendas: ${totalVendas}\n💰 TOTAL GERAL: R$ ${totalGeral.toLocaleString("pt-BR")}`
-    );
+        embed.setDescription(
+            description +
+            `━━━━━━━━━━━━━━━━━━\n\n🏆 TOP VENDEDORES\n🥇 ${topVendedor[0]} — R$ ${topVendedor[1].toLocaleString("pt-BR")}\n\n━━━━━━━━━━━━━━━━━━\n\n🧾 Total de vendas: ${totalVendas}\n💰 TOTAL GERAL: R$ ${totalGeral.toLocaleString("pt-BR")}`
+        );
 
-    const canal = await client.channels.fetch(CANAL_RELATORIO).catch(() => null);
+        const canal = await client.channels.fetch(CANAL_RELATORIO).catch(() => null);
 
-    if (!canal) {
-        return interaction.reply({ content: "❌ Canal não encontrado", ephemeral: true });
-    }
+        if (!canal) {
+            return interaction.reply({ content: "❌ Canal não encontrado", ephemeral: true });
+        }
 
-    await canal.send({ embeds: [embed] });
+        await canal.send({ embeds: [embed] });
 
-    return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
-} catch (err) {
+        return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
+
+    } catch (err) {
         console.error("ERRO AO ENVIAR RELATÓRIO:", err);
         return interaction.reply({ content: "❌ Erro ao enviar relatório", ephemeral: true });
     }
 }
-}
-
 // ===== RESET =====
 if (interaction.isChatInputCommand() && interaction.commandName === "reset") {
     try {
