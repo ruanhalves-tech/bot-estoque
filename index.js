@@ -213,12 +213,13 @@ client.on("interactionCreate", async interaction => {
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
 
-    // 🔥 DESATIVA MENU ANTIGO
+    // ✅ PRIMEIRO abre o modal
+    await interaction.showModal(modal);
+
+    // ✅ DEPOIS desativa o menu antigo
     await interaction.message.edit({
         components: []
     });
-
-    return interaction.showModal(modal);
 }
 
     // ===== MODAL =====
