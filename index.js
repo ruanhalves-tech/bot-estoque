@@ -332,7 +332,7 @@ if (interaction.isStringSelectMenu() && interaction.customId === "item") {
             delete sessoes[interaction.user.id];
 
             // 🔥 LOG NO CANAL
-            const canal = await client.channels.fetch(CANAL_RELATORIO).catch(() => null);
+            const canal = await client.channels.fetch(CANAL_LIDER).catch(() => null);
 
             if (canal) {
                 const embed = new EmbedBuilder()
