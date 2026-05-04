@@ -357,7 +357,7 @@ ${textoItens}
 
     } // ✅ FECHA AQUI O if (interaction.isButton())
 
-// // ===== RELATÓRIO =====
+// ===== RELATÓRIO =====
 if (interaction.isChatInputCommand() && interaction.commandName === "r") {
     if (!interaction.member.roles.cache.has(CARGO_LIDER))
         return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
@@ -389,37 +389,51 @@ if (interaction.isChatInputCommand() && interaction.commandName === "r") {
         }
     }
 
-    let texto = "";
+    const embed = new EmbedBuilder()
+        .setTitle("📊 ═════ RELATÓRIO DE VENDAS ═════")
+        .setColor(0xff0000)
+        .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
+        .setFooter({ text: `Gerado por ${interaction.member.displayName}` });
 
-    for (let i in itens) {
-        texto += `• ${i} — QTD: ${itens[i].qtd} — ${dinheiro(itens[i].total)}\n`;
+    let description = "";
+
+    // TOP 3 itens (simples)
+    const topItens = Object.entries(itens)
+        .sort((a, b) => b[1].qtd - a[1].qtd)
+        .slice(0, 3);
+
+    for (let [nome, data] of topItens) {
+        const vendedor = Object.keys(data.usuarios)[0] || interaction.member.displayName;
+        const qtd = data.qtd;
+
+        description += 
+`📦 **${nome}**
+┣ 🔢 QTD: ${qtd}
+┣ 💰 Total: R$ ${data.total.toLocaleString("pt-BR")}
+┗ 👤 ${vendedor} | ${qtd}
+
+`;
     }
 
-    texto += `\n💰 TOTAL GERAL: ${dinheiro(totalGeral)}\n`;
-    texto += `🧾 TOTAL DE VENDAS: ${totalVendas}`;
+    // TOP vendedor
+    const topVendedor = Object.entries(usuarios)
+        .sort((a, b) => b[1] - a[1])[0];
 
-    try {
-        const canal = await client.channels.fetch(CANAL_RELATORIO);
+    embed.setDescription(
+        description +
+        `━━━━━━━━━━━━━━━━━━\n\n🏆 TOP VENDEDORES\n🥇 ${topVendedor[0]} — R$ ${topVendedor[1].toLocaleString("pt-BR")}\n\n━━━━━━━━━━━━━━━━━━\n\n🧾 Total de vendas: ${totalVendas}\n💰 TOTAL GERAL: R$ ${totalGeral.toLocaleString("pt-BR")}`
+    );
 
-        if (!canal) {
-            return interaction.reply({ content: "❌ Canal não encontrado", ephemeral: true });
-        }
+    const canal = await client.channels.fetch(CANAL_RELATORIO).catch(() => null);
 
-        const embed = new EmbedBuilder()
-            .setColor(0xff0000)
-            .setTitle("📊 RELATÓRIO DE VENDAS")
-            .setAuthor({
-                name: interaction.user.displayName,
-                iconURL: interaction.user.displayAvatarURL({ dynamic: true })
-            })
-            .setDescription(texto)
-            .setFooter({ text: "Sistema de Vendas" });
+    if (!canal) {
+        return interaction.reply({ content: "❌ Canal não encontrado", ephemeral: true });
+    }
 
-        await canal.send({ embeds: [embed] });
+    await canal.send({ embeds: [embed] });
 
-        return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
-
-    } catch (err) {
+    return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
+} catch (err) {
         console.error("ERRO AO ENVIAR RELATÓRIO:", err);
         return interaction.reply({ content: "❌ Erro ao enviar relatório", ephemeral: true });
     }
