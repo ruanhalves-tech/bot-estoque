@@ -224,26 +224,29 @@ if (interaction.isChatInputCommand() && interaction.commandName === "v") {
 
 // ===== SELECT =====
 if (interaction.isStringSelectMenu() && interaction.customId === "item") {
-        const sessao = sessoes[interaction.user.id];
-        if (!sessao) return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
+    const sessao = sessoes[interaction.user.id];
+    if (!sessao) return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
 
-        const item = interaction.values[0];
-        sessao.itemAtual = item;
+    const itensSelecionados = interaction.values;
 
-        const modal = new ModalBuilder()
-            .setCustomId("quantidade_modal")
-            .setTitle(`Quantidade de ${item}`);
+    // salva lista de itens selecionados
+    sessao.itensTemp = itensSelecionados;
 
-        const input = new TextInputBuilder()
-            .setCustomId("quantidade_input")
-            .setLabel("Digite a quantidade")
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true);
+    const modal = new ModalBuilder()
+        .setCustomId("quantidade_multi_modal")
+        .setTitle("Quantidade dos itens");
 
-        modal.addComponents(new ActionRowBuilder().addComponents(input));
+    const input = new TextInputBuilder()
+        .setCustomId("quantidade_input")
+        .setLabel("Digite quantidades separadas por vírgula")
+        .setPlaceholder("Ex: 2,5,1 (na mesma ordem dos itens)")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
 
-        await interaction.showModal(modal);
-    }
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
+
+    await interaction.showModal(modal);
+}
 
     // ===== MODAL =====
     if (interaction.isModalSubmit() && interaction.customId === "quantidade_modal") {
