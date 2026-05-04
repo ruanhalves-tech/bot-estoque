@@ -285,7 +285,7 @@ if (interaction.isStringSelectMenu() && interaction.customId === "item") {
             });
         }
 
-        if (interaction.customId === "finalizar") {
+                if (interaction.customId === "finalizar") {
             let total = 0;
             let texto = "";
 
@@ -307,56 +307,57 @@ if (interaction.isStringSelectMenu() && interaction.customId === "item") {
         }
 
         if (interaction.customId === "confirmar") {
-    let total = 0;
-    let textoItens = "";
+            let total = 0;
+            let textoItens = "";
 
-    const vendedor = interaction.member.displayName;
+            const vendedor = interaction.member.displayName;
 
-    for (let i in sessao.itens) {
-        const qtd = sessao.itens[i];
-        const valorItem = precos[i] * qtd;
+            for (let i in sessao.itens) {
+                const qtd = sessao.itens[i];
+                const valorItem = precos[i] * qtd;
 
-        total += valorItem;
+                total += valorItem;
 
-        textoItens += `┣ ${i} — ${qtd}\n`;
-        textoItens += `┃ 💰 R$ ${precos[i]}\n`;
-        textoItens += `┃ 💵 R$ ${valorItem}\n`;
-    }
+                textoItens += `┣ ${i} — ${qtd}\n`;
+                textoItens += `┃ 💰 R$ ${precos[i]}\n`;
+                textoItens += `┃ 💵 R$ ${valorItem}\n`;
+            }
 
-    // salva venda
-    vendas.push({
-        user: vendedor,
-        itens: sessao.itens,
-        total
-    });
+            vendas.push({
+                user: vendedor,
+                itens: sessao.itens,
+                total
+            });
 
-    delete sessoes[interaction.user.id];
+            delete sessoes[interaction.user.id];
 
-    // 🔥 LOG NO CANAL
-    const canal = await client.channels.fetch(CANAL_RELATORIO).catch(() => null);
+            // 🔥 LOG NO CANAL
+            const canal = await client.channels.fetch(CANAL_RELATORIO).catch(() => null);
 
-    if (canal) {
-        const embed = new EmbedBuilder()
-            .setTitle("📊 NOVA VENDA")
-            .setColor(0xff0000)
-            .setDescription(
+            if (canal) {
+                const embed = new EmbedBuilder()
+                    .setTitle("📊 NOVA VENDA")
+                    .setColor(0xff0000)
+                    .setDescription(
 `👤 **${vendedor}**
 
 ${textoItens}
 
 💰 **TOTAL: R$ ${total.toLocaleString("pt-BR")}**`
-            );
+                    );
 
-        await canal.send({ embeds: [embed] });
-    }
+                await canal.send({ embeds: [embed] });
+            }
 
-    return interaction.reply({
-        content: "✅ Venda registrada!",
-        ephemeral: true
-    });
-}
+            return interaction.reply({
+                content: "✅ Venda registrada!",
+                ephemeral: true
+            });
+        }
 
-    // ===== RELATÓRIO =====
+    } // ✅ FECHA AQUI O if (interaction.isButton())
+
+// ===== RELATÓRIO =====
 if (interaction.isChatInputCommand() && interaction.commandName === "r") {
     if (!interaction.member.roles.cache.has(CARGO_LIDER))
         return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
