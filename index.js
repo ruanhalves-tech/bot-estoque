@@ -54,7 +54,7 @@ function dinheiro(v) {
 
 function painel(sessao) {
   let lista = Object.entries(sessao.itens)
-    .map(([i, q]) => • ${i} (${q}))
+    .map(([i, q]) => `• ${i} (${q})`)
     .join("\n");
 
   if (!lista) lista = "Nenhum item ainda";
@@ -62,10 +62,10 @@ function painel(sessao) {
   const total = Object.keys(precos).length;
   const atual = Object.keys(sessao.itens).length;
 
-  return 🛒 SEU CARRINHO ${lista}
+  return `🛒 SEU CARRINHO ${lista}
 ━━━━━━━━━━━━━━
 📊 Progresso: ${atual}/${total} itens
-━━━━━━━━━━━━━━;
+━━━━━━━━━━━━━━`;
 }
 
 // ===== COMANDOS =====
@@ -128,7 +128,6 @@ const rest = new REST({ version: "10" }).setToken(TOKEN);
 // ===== INTERAÇÕES =====
 client.on("interactionCreate", async interaction => {
 
-  // ===== MOV =====
   if (interaction.isChatInputCommand() && interaction.commandName === "mov") {
     try {
       await interaction.deferReply();
@@ -156,7 +155,7 @@ client.on("interactionCreate", async interaction => {
 
       await sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
-        range: Movimentação!A${linhaLivre}:E${linhaLivre},
+        range: `Movimentação!A${linhaLivre}:E${linhaLivre}`,
         valueInputOption: "USER_ENTERED",
         resource: {
           values: [[data, item, tipo === 'entrada' ? 'Entrada' : 'Saída', quantidade, user]]
@@ -178,12 +177,10 @@ client.on("interactionCreate", async interaction => {
       return interaction.editReply({ embeds: [embed] });
 
     } catch (err) {
-      console.error("ERRO PLANILHA:", err.response?.data || err.message);
       return interaction.editReply("❌ Erro na planilha");
     }
   }
 
-  // ===== INICIAR VENDA =====
   if (interaction.isChatInputCommand() && interaction.commandName === "v") {
     sessoes[interaction.user.id] = { itens: {} };
 
@@ -193,13 +190,12 @@ client.on("interactionCreate", async interaction => {
       .addOptions(Object.keys(precos).map(i => ({ label: i, value: i })));
 
     return interaction.reply({
-      content: ${painel(sessoes[interaction.user.id])}\n\n📦 Escolha o item:,
+      content: `${painel(sessoes[interaction.user.id])}\n\n📦 Escolha o item:`,
       components: [new ActionRowBuilder().addComponents(menu)],
       ephemeral: true
     });
   }
 
-  // ===== SELECT =====
   if (interaction.isStringSelectMenu() && interaction.customId === "item") {
     const sessao = sessoes[interaction.user.id];
     if (!sessao) return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
@@ -209,7 +205,7 @@ client.on("interactionCreate", async interaction => {
 
     const modal = new ModalBuilder()
       .setCustomId("quantidade_modal")
-      .setTitle(Quantidade de ${item});
+      .setTitle(`Quantidade de ${item}`);
 
     const input = new TextInputBuilder()
       .setCustomId("quantidade_input")
@@ -222,7 +218,6 @@ client.on("interactionCreate", async interaction => {
     await interaction.showModal(modal);
   }
 
-  // ===== MODAL =====
   if (interaction.isModalSubmit() && interaction.customId === "quantidade_modal") {
     const sessao = sessoes[interaction.user.id];
     if (!sessao) return;
@@ -240,20 +235,12 @@ client.on("interactionCreate", async interaction => {
     sessao.itens[item] = qtd;
     delete sessao.itemAtual;
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("add").setLabel("➕ Adicionar mais").setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId("finalizar").setLabel("✅ Finalizar").setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId("cancelar").setLabel("❌ Cancelar").setStyle(ButtonStyle.Danger)
-    );
-
     return interaction.reply({
-      content: ${painel(sessao)}\n\n✅ ${item} (${qtd}) adicionado,
-      components: [row],
+      content: `✔ ${item} (${qtd}) adicionado`,
       ephemeral: true
     });
   }
 
-  // ===== BOTÕES =====
   if (interaction.isButton()) {
     const sessao = sessoes[interaction.user.id];
     if (!sessao) return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
@@ -272,7 +259,7 @@ client.on("interactionCreate", async interaction => {
         .addOptions(restantes.map(i => ({ label: i, value: i })));
 
       return interaction.reply({
-        content: ${painel(sessao)}\n\n📦 Escolha outro item:,
+        content: `${painel(sessao)}\n\n📦 Escolha outro item:`,
         components: [new ActionRowBuilder().addComponents(menu)],
         ephemeral: true
       });
@@ -284,17 +271,11 @@ client.on("interactionCreate", async interaction => {
 
       for (let i in sessao.itens) {
         total += precos[i] * sessao.itens[i];
-        texto += • ${i} — ${sessao.itens[i]}\n;
+        texto += `• ${i} — ${sessao.itens[i]}\n`;
       }
 
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("confirmar").setLabel("Confirmar").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId("cancelar").setLabel("Cancelar").setStyle(ButtonStyle.Danger)
-      );
-
       return interaction.reply({
-        content: Confirmar venda?\n\n${texto}\n💰 ${dinheiro(total)},
-        components: [row],
+        content: `Confirmar venda?\n\n${texto}\n💰 ${dinheiro(total)}`,
         ephemeral: true
       });
     }
@@ -309,9 +290,9 @@ client.on("interactionCreate", async interaction => {
         const valorItem = precos[i] * qtd;
         total += valorItem;
 
-        textoItens += ┣ ${i} — ${qtd}\n;
-        textoItens += ┃ 💰 R$ ${precos[i]}\n;
-        textoItens += ┃ 💵 R$ ${valorItem}\n;
+        textoItens += `┣ ${i} — ${qtd}\n`;
+        textoItens += `┃ 💰 R$ ${precos[i]}\n`;
+        textoItens += `┃ 💵 R$ ${valorItem}\n`;
       }
 
       vendas.push({ user: vendedor, itens: sessao.itens, total });
@@ -324,105 +305,13 @@ client.on("interactionCreate", async interaction => {
           .setTitle("📊 NOVA VENDA")
           .setColor(0xff0000)
           .setDescription(
-            👤 **${vendedor}** ${textoItens} 💰 **TOTAL: R$ ${total.toLocaleString("pt-BR")}**
+            `👤 **${vendedor}** ${textoItens} 💰 **TOTAL: R$ ${total.toLocaleString("pt-BR")}**`
           );
 
         await canal.send({ embeds: [embed] });
       }
 
       return interaction.reply({ content: "✅ Venda registrada!", ephemeral: true });
-    }
-  }
-
-  // ===== RELATÓRIO =====
-  if (interaction.isChatInputCommand() && interaction.commandName === "r") {
-    try {
-      if (!interaction.member.roles.cache.has(CARGO_LIDER))
-        return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
-
-      let totalGeral = 0;
-      let totalVendas = vendas.length;
-      let itens = {};
-      let usuarios = {};
-
-      for (let v of vendas) {
-        totalGeral += v.total;
-
-        if (!usuarios[v.user]) usuarios[v.user] = 0;
-        usuarios[v.user] += v.total;
-
-        for (let i in v.itens) {
-          if (!itens[i]) {
-            itens[i] = { qtd: 0, total: 0, usuarios: {} };
-          }
-
-          const qtd = v.itens[i];
-          itens[i].qtd += qtd;
-          itens[i].total += qtd * precos[i];
-
-          if (!itens[i].usuarios[v.user]) itens[i].usuarios[v.user] = 0;
-          itens[i].usuarios[v.user] += qtd;
-        }
-      }
-
-      const embed = new EmbedBuilder()
-        .setTitle("📊 ═════ RELATÓRIO DE VENDAS ═════")
-        .setColor(0xff0000)
-        .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-        .setFooter({ text: Gerado por ${interaction.member.displayName} });
-
-      let description = "";
-
-      const topItens = Object.entries(itens)
-        .sort((a, b) => b[1].qtd - a[1].qtd)
-        .slice(0, 3);
-
-      for (let [nome, data] of topItens) {
-        const vendedor = Object.keys(data.usuarios)[0] || interaction.member.displayName;
-        const qtd = data.qtd;
-
-        description += 📦 **${nome}**
-┣ 🔢 QTD: ${qtd}
-┣ 💰 Total: R$ ${data.total.toLocaleString("pt-BR")}
-┗ 👤 ${vendedor} | ${qtd};
-      }
-
-      const topVendedor = Object.entries(usuarios).sort((a, b) => b[1] - a[1])[0] || ["Nenhum", 0];
-
-      embed.setDescription(
-        description +
-        ━━━━━━━━━━━━━━━━━━\n\n🏆 TOP VENDEDORES\n🥇 ${topVendedor[0]} — R$ ${topVendedor[1].toLocaleString("pt-BR")}\n\n━━━━━━━━━━━━━━━━━━\n\n🧾 Total de vendas: ${totalVendas}\n💰 TOTAL GERAL: R$ ${totalGeral.toLocaleString("pt-BR")}
-      );
-
-      const canal = await client.channels.fetch(CANAL_RELATORIO).catch(() => null);
-      if (!canal) {
-        return interaction.reply({ content: "❌ Canal não encontrado", ephemeral: true });
-      }
-
-      await canal.send({ embeds: [embed] });
-      return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
-
-    } catch (err) {
-      console.error("ERRO AO ENVIAR RELATÓRIO:", err);
-      return interaction.reply({ content: "❌ Erro ao enviar relatório", ephemeral: true });
-    }
-  }
-
-  // ===== RESET =====
-  if (interaction.isChatInputCommand() && interaction.commandName === "reset") {
-    try {
-      if (!interaction.member.roles.cache.has(CARGO_LIDER)) {
-        return interaction.reply({ content: "❌ Sem permissão", ephemeral: true });
-      }
-
-      vendas.length = 0;
-      sessoes = {};
-
-      return interaction.reply({ content: "🧹 Sistema de vendas resetado com sucesso!", ephemeral: true });
-
-    } catch (err) {
-      console.error("ERRO RESET:", err);
-      return interaction.reply({ content: "❌ Erro ao resetar sistema", ephemeral: true });
     }
   }
 });
