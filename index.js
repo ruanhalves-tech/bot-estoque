@@ -371,11 +371,13 @@ if (interaction.isChatInputCommand() && interaction.commandName === "r") {
 
         return interaction.reply({ content: "📊 Relatório enviado!", ephemeral: true });
 
-    } catch (err) {
+        } catch (err) {
         console.error("ERRO AO ENVIAR RELATÓRIO:", err);
         return interaction.reply({ content: "❌ Erro ao enviar relatório", ephemeral: true });
     }
 }
+
+}); // ✅ ESSA LINHA FALTAVA
 
 client.once("clientReady", () => {
     console.log(`🤖 Logado como ${client.user.tag}`);
