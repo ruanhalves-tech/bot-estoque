@@ -211,10 +211,7 @@ client.on("interactionCreate", async interaction => {
 
         modal.addComponents(new ActionRowBuilder().addComponents(input));
 
-        await interaction.update({
-    content: `${painel(sessao)}\n\n✅ Item selecionado`,
-    components: []
-});
+        await interaction.deferUpdate(); // trava o menu antigo
 
 return interaction.showModal(modal);
     }
