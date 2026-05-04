@@ -170,24 +170,24 @@ client.on("interactionCreate", async interaction => {
         }
     }
 
-    // ===== V =====
-    if (interaction.isChatInputCommand() && interaction.commandName === "v") {
-        sessoes[interaction.user.id] = { itens: {} };
+    // ===== INICIAR VENDA =====
+if (interaction.isChatInputCommand() && interaction.commandName === "v") {
+    sessoes[interaction.user.id] = { itens: {} };
 
-        const menu = new StringSelectMenuBuilder()
-            .setCustomId("item")
-            .setPlaceholder("Escolha o item")
-            .addOptions(Object.keys(precos).map(i => ({ label: i, value: i })));
+    const menu = new StringSelectMenuBuilder()
+        .setCustomId("item")
+        .setPlaceholder("Escolha o item")
+        .addOptions(Object.keys(precos).map(i => ({ label: i, value: i })));
 
-        return interaction.reply({
-            content: `${painel(sessoes[interaction.user.id])}\n\n📦 Escolha o item:`,
-            components: [new ActionRowBuilder().addComponents(menu)],
-            ephemeral: true
-        });
-    }
+    return interaction.reply({
+        content: `${painel(sessoes[interaction.user.id])}\n\n📦 Escolha o item:`,
+        components: [new ActionRowBuilder().addComponents(menu)],
+        ephemeral: true
+    });
+}
 
-    // ===== SELECT =====
-    if (interaction.isStringSelectMenu() && interaction.customId === "item") {
+// ===== SELECT =====
+if (interaction.isStringSelectMenu() && interaction.customId === "item") {
         const sessao = sessoes[interaction.user.id];
         if (!sessao) return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
 
@@ -311,7 +311,7 @@ client.on("interactionCreate", async interaction => {
 
 });
 
-client.once("ready", () => {
+client.once("clientReady", () => {
     console.log(`🤖 Logado como ${client.user.tag}`);
 });
 
