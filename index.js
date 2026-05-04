@@ -213,7 +213,6 @@ client.on("interactionCreate", async interaction => {
 
         await interaction.deferUpdate(); // trava o menu antigo
 
-return interaction.showModal(modal);
     }
 
     // ===== MODAL =====
@@ -226,6 +225,14 @@ return interaction.showModal(modal);
             return interaction.reply({ content: "❌ Quantidade inválida", ephemeral: true });
 
         const item = sessao.itemAtual;
+
+// 🔥 PROTEÇÃO AQUI
+if (sessao.itens[item]) {
+    return interaction.reply({
+        content: "❌ Esse item já foi adicionado",
+        ephemeral: true
+    });
+}
 
         sessao.itens[item] = (sessao.itens[item] || 0) + qtd;
         delete sessao.itemAtual;
