@@ -176,23 +176,7 @@ client.on("interactionCreate", async interaction => {
     }
 
     // ===== INICIAR VENDA =====
-    if (interaction.isChatInputCommand() && interaction.commandName === "v") {
-        sessoes[interaction.user.id] = { itens: {} };
-
-        const menu = new StringSelectMenuBuilder()
-            .setCustomId("item")
-            .setPlaceholder("Escolha o item")
-            .addOptions(Object.keys(precos).map(i => ({ label: i, value: i })));
-
-        return interaction.reply({
-           content: `${painel(sessoes[interaction.user.id])}\n\n📦 Escolha o item:`,
-            components: [new ActionRowBuilder().addComponents(menu)],
-            ephemeral: true
-        });
-    }
-
-   // ===== SELECT =====
-if (interaction.isStringSelectMenu() && interaction.customId === "item") {
+    if (interaction.isStringSelectMenu() && interaction.customId === "item") {
     const sessao = sessoes[interaction.user.id];
     if (!sessao) {
         return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
@@ -213,7 +197,8 @@ if (interaction.isStringSelectMenu() && interaction.customId === "item") {
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
 
-    return interaction.showModal(modal);
+    await interaction.showModal(modal);
+}
 }
 
     // ===== MODAL =====
