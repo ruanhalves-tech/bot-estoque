@@ -377,6 +377,7 @@ if (interaction.isChatInputCommand() && interaction.commandName === "r") {
         console.error("ERRO AO ENVIAR RELATÓRIO:", err);
         return interaction.reply({ content: "❌ Erro ao enviar relatório", ephemeral: true });
     }
+}
 
 // ===== RESET =====
 if (interaction.isChatInputCommand() && interaction.commandName === "reset") {
@@ -404,7 +405,6 @@ if (interaction.isChatInputCommand() && interaction.commandName === "reset") {
             ephemeral: true
         });
     }
-}
 }
 }
 
