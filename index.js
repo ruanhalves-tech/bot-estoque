@@ -160,14 +160,30 @@ client.on("interactionCreate", async interaction => {
             const user = interaction.member.displayName;
             const data = new Date().toLocaleString("pt-BR");
 
-            await sheets.spreadsheets.values.append({
-                spreadsheetId: SHEET_ID,
-                range: 'Movimentação!A:E',
-                valueInputOption: 'USER_ENTERED',
-                resource: {
-                    values: [[data, item, tipo === 'entrada' ? 'Entrada' : 'Saída', quantidade, user]]
-                }
-            });
+            const planilha = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: "Movimentação!A:E",
+});
+
+const linhas = planilha.data.values || [];
+
+let linhaLivre = 1;
+
+for (let i = 0; i < linhas.length; i++) {
+    if (!linhas[i] || linhas[i].length === 0 || linhas[i].every(c => c === "")) {
+        linhaLivre = i + 1;
+        break;
+    }
+}
+
+await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `Movimentação!A${linhaLivre}:E${linhaLivre}`,
+    valueInputOption: "USER_ENTERED",
+    resource: {
+        values: [[data, item, tipo === 'entrada' ? 'Entrada' : 'Saída', quantidade, user]]
+    }
+});
 
             const embed = new EmbedBuilder()
     .setTitle("📊 MOVIMENTAÇÃO REGISTRADA")
