@@ -192,28 +192,34 @@ client.on("interactionCreate", async interaction => {
     }
 
     // ===== SELECT =====
-    if (interaction.isStringSelectMenu() && interaction.customId === "item") {
-        const sessao = sessoes[interaction.user.id];
-        if (!sessao) return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
-
-        const item = interaction.values[0];
-        sessao.itemAtual = item;
-
-        const modal = new ModalBuilder()
-            .setCustomId("quantidade_modal")
-            .setTitle(`Quantidade de ${item}`);
-
-        const input = new TextInputBuilder()
-            .setCustomId("quantidade_input")
-            .setLabel("Digite a quantidade")
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true);
-
-        modal.addComponents(new ActionRowBuilder().addComponents(input));
-
-        await interaction.showModal(modal); // trava o menu antigo
-
+   if (interaction.isStringSelectMenu() && interaction.customId === "item") {
+    const sessao = sessoes[interaction.user.id];
+    if (!sessao) {
+        return interaction.reply({ content: "❌ Sessão expirada", ephemeral: true });
     }
+
+    const item = interaction.values[0];
+    sessao.itemAtual = item;
+
+    const modal = new ModalBuilder()
+        .setCustomId("quantidade_modal")
+        .setTitle(`Quantidade de ${item}`);
+
+    const input = new TextInputBuilder()
+        .setCustomId("quantidade_input")
+        .setLabel("Digite a quantidade")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
+
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
+
+    // 🔥 DESATIVA MENU ANTIGO
+    await interaction.message.edit({
+        components: []
+    });
+
+    return interaction.showModal(modal);
+}
 
     // ===== MODAL =====
     if (interaction.isModalSubmit() && interaction.customId === "quantidade_modal") {
