@@ -161,7 +161,25 @@ client.on("interactionCreate", async interaction => {
       const user = interaction.member.displayName;
       const data = new Date().toLocaleString("pt-BR");
 
-      const linha = await encontrarPrimeiraLinhaVazia();
+      const planilha = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: "Movimentação!A:E",
+});
+
+const linhas = planilha.data.values || [];
+
+let linha = linhas.length + 1;
+
+for (let i = 0; i < linhas.length; i++) {
+    if (
+        !linhas[i] ||
+        linhas[i].length === 0 ||
+        linhas[i].every(c => c === "" || c === null)
+    ) {
+        linha = i + 1;
+        break;
+    }
+}
 
 await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
