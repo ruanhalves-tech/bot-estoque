@@ -161,14 +161,22 @@ client.on("interactionCreate", async interaction => {
       const user = interaction.member.displayName;
       const data = new Date().toLocaleString("pt-BR");
 
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SHEET_ID,
-        range: 'Movimentação!A:E',
-        valueInputOption: 'USER_ENTERED',
-        resource: {
-          values: [[data, item, tipo === 'entrada' ? 'Entrada' : 'Saída', quantidade, user]]
-        }
-      });
+      const linha = await encontrarPrimeiraLinhaVazia();
+
+await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `Movimentação!A${linha}:E${linha}`,
+    valueInputOption: 'USER_ENTERED',
+    resource: {
+        values: [[
+            data,
+            item,
+            tipo === 'entrada' ? 'Entrada' : 'Saída',
+            quantidade,
+            user
+        ]]
+    }
+});
 
       const embed = new EmbedBuilder()
         .setTitle("📊 MOVIMENTAÇÃO REGISTRADA")
